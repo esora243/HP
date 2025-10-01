@@ -14,8 +14,8 @@
             theme: {
                 extend: {
                     colors: {
-                        'y-primary': '#1f334a', // より濃いネイビー (メインカラー)
-                        'y-accent': '#c0392b',  // 深い赤 (アクセント)
+                        'y-primary': '#1f334a', // メインカラー (濃いネイビー)
+                        'y-accent': '#c0392b',  // アクセントカラー (深い赤)
                         'y-background': '#f4f7f6', // 背景色
                         'y-text': '#2c3e50', // テキスト色
                     },
@@ -27,7 +27,7 @@
         }
     </script>
     <style>
-        /* カスタムスタイル */
+        /* 1. 基本パディング */
         .section-padding {
             padding: 4rem 1.5rem;
         }
@@ -37,9 +37,9 @@
             }
         }
         
-        /* テキストの後ろに薄いテクスチャ/画像を適用するためのクラス */
+        /* 2. 背景テクスチャ (テキストの後ろに薄く貼る) */
         .textured-section {
-            background-color: #ffffff; /* ベースの背景色 */
+            background-color: #ffffff;
             position: relative;
             overflow: hidden;
         }
@@ -50,53 +50,52 @@
             left: 0;
             right: 0;
             bottom: 0;
-            /* 背景テクスチャ (より繊細なドットパターンをシミュレート) */
+            /* 背景テクスチャのPlaceholder */
             background-image: url('https://placehold.co/1000x1000/ffffff/d1d5db?text=Subtle+Texture'); 
             background-repeat: repeat;
-            opacity: 0.1; /* 透過度を低く設定 */
+            opacity: 0.1;
             z-index: 0;
             pointer-events: none;
         }
 
-        /* ヒーローセクションの背景 */
+        /* 3. ヒーローセクションの背景 */
         #hero {
-            /* 背景画像に濃いネイビーと透明のグラデーションをオーバーレイ */
+            /* 背景画像とオーバーレイでタイトルを際立たせる */
             background-image: linear-gradient(to bottom, rgba(31, 51, 74, 0.75), rgba(31, 51, 74, 0.75)), url('https://placehold.co/1500x450/2c3e50/ffffff?text=YAMAGUCHI+U+MEDICINE+ENTRANCE+BG');
             background-size: cover;
             background-position: center center;
         }
 
-        /* セクションコンテンツをテクスチャの上に配置 */
+        /* 4. セクションコンテンツレイヤー */
         .content-layer {
             position: relative;
             z-index: 10;
         }
 
-        /* タイトルヘッダーの強調と透かし */
+        /* 5. タイトルヘッダーの強調と透かし (タイトルの後ろに画像を薄く貼る工夫) */
         .section-title {
             position: relative;
-            padding-left: 1rem; /* border-l-4と合わせる */
+            padding-left: 1rem; 
             margin-bottom: 2rem;
             z-index: 10;
         }
 
-        /* タイトルの後ろに薄い画像を貼る工夫 */
         .section-title h2 {
             position: relative;
             z-index: 10;
             font-size: 2.25rem;
-            line-height: 1; /* 行の高さを詰める */
+            line-height: 1;
         }
         
         .section-title::after {
-            content: attr(data-title-en); /* CSSでの属性値取得 */
+            content: attr(data-title-en); 
             position: absolute;
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            font-size: 8vw; /* 画面サイズに応じて大きくする */
+            font-size: 8vw;
             color: rgba(22, 45, 68, 0.05); /* 非常に薄いネイビー */
-            font-weight: 800; /* 極太 */
+            font-weight: 800;
             letter-spacing: 0.1em;
             pointer-events: none;
             white-space: nowrap;
@@ -108,6 +107,31 @@
                 font-size: 5vw;
             }
         }
+        
+        /* 記事リストアイテムのリンク領域を拡大 */
+        .article-link-container {
+            display: block;
+            width: 100%;
+            height: 100%;
+            padding: 1rem 1rem 1rem 0;
+        }
+        
+        /* 散りばめられた画像のスタイル */
+        .scattered-image-card {
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+        .scattered-image-card img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            aspect-ratio: 16 / 10;
+        }
+        
+        /* アクセスセクションの画像 */
+        #access .access-image {
+            object-fit: cover;
+            aspect-ratio: 16 / 9;
+        }
     </style>
 </head>
 <body class="bg-y-background font-sans">
@@ -118,11 +142,10 @@
             <div class="text-xl font-bold tracking-wider">
                 <a href="#hero" class="hover:text-y-accent transition duration-300">山口大学医学部医学科 学士編入生有志の会</a>
             </div>
-            <!-- ナビゲーションメニュー (写真アーカイブ削除済み) -->
+            <!-- ナビゲーションメニュー (ホーム/記事/アクセス のみ) -->
             <nav class="mt-3 md:mt-0" id="main-nav">
                 <ul class="flex space-x-4">
                     <li><a href="#about" class="px-3 py-2 rounded-lg hover:bg-y-accent transition duration-300 flex items-center text-sm font-semibold"><i class="fas fa-home mr-1"></i>ホーム</a></li>
-                    <li><a href="#members" class="px-3 py-2 rounded-lg hover:bg-y-accent transition duration-300 flex items-center text-sm font-semibold"><i class="fas fa-users mr-1"></i>メンバー</a></li>
                     <li><a href="#articles" class="px-3 py-2 rounded-lg hover:bg-y-accent transition duration-300 flex items-center text-sm font-semibold"><i class="fas fa-book-open mr-1"></i>記事</a></li>
                     <li><a href="#access" class="px-3 py-2 rounded-lg hover:bg-y-accent transition duration-300 flex items-center text-sm font-semibold"><i class="fas fa-map-marked-alt mr-1"></i>アクセス</a></li>
                 </ul>
@@ -134,7 +157,7 @@
     <section id="hero" class="h-[450px] flex items-center justify-center text-center shadow-inner">
         <div class="p-6 md:p-10 rounded-xl max-w-4xl mx-auto">
             <h2 class="text-5xl md:text-7xl font-extrabold text-white mb-6 tracking-tight drop-shadow-lg">
-                異なるキャリアが、未来を拓く
+                多様な経験が、未来の医療を創る
             </h2>
             <p class="text-xl md:text-2xl text-gray-200 italic font-medium drop-shadow-md">
                 “おもしろきこともなき世を面白く<br>すみなしものは心なりけり”
@@ -153,13 +176,40 @@
                     </h2>
                 </div>
                 
-                <div class="space-y-6 text-lg text-gray-700 mt-8">
-                    <p>
-                        当会は、“異なるキャリアを歩んできた人たちの繋がりが価値観の広がりに繋がるのではないか”という想いから設立されました。大それたことをいうとこのような理念ですが、実際は「学士編入生って色々な人がいるから、縦横の繋がりを作ったらきっと面白いよね？」という、よりカジュアルな気持ちでスタートしています。
-                    </p>
-                    <p>
-                        このウェブサイトを通じて、私たち有志の会が実際に感じている「学士編入の面白さ」や、多様なバックグラウンドを持つ仲間との学びの深さを少しでも共有できたら幸いです。
-                    </p>
+                <div class="space-y-8 text-lg text-gray-700 mt-8">
+                    <!-- 1つ目の画像とテキストの対比 -->
+                    <div class="flex flex-col md:flex-row items-start gap-8">
+                        <div class="md:w-1/2">
+                            <h3 class="text-2xl font-semibold text-y-primary mb-4">設立の理念と背景</h3>
+                            <p class="mb-4">
+                                壮大な理念を述べると「異なるキャリアを歩んできた人たちの繋がりが、価値観の広がりに繋がるのではないか」という想いから当会は設立されました。
+                            </p>
+                            <p>
+                                しかし、根底にあるのは「学士編入生は様々な経験者が集まっていて面白い。学年を超えた縦横の繋がりを築けば、より刺激的な学生生活を送れるはずだ」という、シンプルでカジュアルな期待です。
+                            </p>
+                        </div>
+                        <div class="md:w-1/2 scattered-image-card rounded-lg overflow-hidden">
+                            <!-- 画像1を散りばめる -->
+                            <img src="images/画像(1).jpg" alt="多様なキャリアを持つ学生たちの様子" onerror="this.onerror=null; this.src='https://placehold.co/800x500/1f334a/ffffff?text=Image+1+PlaceHolder';" loading="lazy">
+                        </div>
+                    </div>
+
+                    <!-- 2つ目の画像とテキストの対比 -->
+                    <div class="flex flex-col md:flex-row-reverse items-start gap-8 pt-8 border-t border-gray-100">
+                        <div class="md:w-1/2">
+                            <h3 class="text-2xl font-semibold text-y-primary mb-4">会の役割と発信</h3>
+                            <p class="mb-4">
+                                私たちの活動は、単なる交流にとどまりません。学内の勉強会、キャリアイベントの企画、地域医療への貢献など、多様な経験値を活かした独自の活動を展開しています。
+                            </p>
+                            <p>
+                                このウェブサイトでは、私たちが日々感じている「学士編入の魅力」や、多様な仲間との学びの深さを、少しでも皆様と共有できればと考えております。
+                            </p>
+                        </div>
+                        <div class="md:w-1/2 scattered-image-card rounded-lg overflow-hidden">
+                            <!-- 画像2を散りばめる -->
+                            <img src="images/画像(2).jpg" alt="勉強会の風景または協調性のイメージ" onerror="this.onerror=null; this.src='https://placehold.co/800x500/1f334a/ffffff?text=Image+2+PlaceHolder';" loading="lazy">
+                        </div>
+                    </div>
                 </div>
                 
                 <!-- 連絡先とリンク -->
@@ -200,42 +250,10 @@
             </div>
         </section>
 
-        <!-- 3. メンバーセクション (仮) -->
-        <section id="members" class="section-padding bg-gray-50 border-b border-gray-200">
-            <div class="section-title" data-title-en="MEMBERS">
-                <h2 class="text-3xl font-bold text-y-text border-l-4 border-y-accent pl-4">
-                    <i class="fas fa-users text-y-accent mr-2"></i>メンバー
-                </h2>
-            </div>
-            
-            <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8 mt-8">
-                <!-- メンバーカードのプレースホルダー -->
-                <div class="bg-white p-6 rounded-lg shadow-md text-center border-t-4 border-y-accent">
-                    <img src="https://placehold.co/100x100/3498db/ffffff?text=M.A" alt="メンバーA" class="rounded-full w-24 h-24 mx-auto mb-4 border-4 border-gray-200">
-                    <h3 class="text-xl font-bold text-y-text">メンバー A</h3>
-                    <p class="text-gray-600">所属学年: 4年生</p>
-                    <p class="text-sm text-gray-500 mt-2">（前職：ITエンジニア）</p>
-                </div>
-                <div class="bg-white p-6 rounded-lg shadow-md text-center border-t-4 border-y-accent">
-                    <img src="https://placehold.co/100x100/3498db/ffffff?text=M.B" alt="メンバーB" class="rounded-full w-24 h-24 mx-auto mb-4 border-4 border-gray-200">
-                    <h3 class="text-xl font-bold text-y-text">メンバー B</h3>
-                    <p class="text-gray-600">所属学年: 2年生</p>
-                    <p class="text-sm text-gray-500 mt-2">（前職：教師）</p>
-                </div>
-                <div class="bg-white p-6 rounded-lg shadow-md text-center border-t-4 border-y-accent">
-                    <img src="https://placehold.co/100x100/3498db/ffffff?text=M.C" alt="メンバーC" class="rounded-full w-24 h-24 mx-auto mb-4 border-4 border-gray-200">
-                    <h3 class="text-xl font-bold text-y-text">メンバー C</h3>
-                    <p class="text-gray-600">所属学年: 6年生</p>
-                    <p class="text-sm text-gray-500 mt-2">（前職：製薬研究者）</p>
-                </div>
-            </div>
-            <p class="text-center text-gray-600 mt-8">※メンバー構成は毎年変動します。詳細については個別記事をご覧ください。</p>
-        </section>
-        
-        <!-- 4. アクセスセクション -->
+        <!-- 3. アクセスセクション -->
         <section id="access" class="section-padding bg-gray-50 rounded-b-xl">
             <div class="section-title" data-title-en="ACCESS">
-                <h2 class="text-3xl font-bold text-y-text mb-8 border-l-4 border-y-accent pl-4">
+                <h2 class="text-3xl font-bold text-y-text border-l-4 border-y-accent pl-4">
                     <i class="fas fa-map-marker-alt text-y-accent mr-2"></i>アクセス
                 </h2>
             </div>
@@ -250,9 +268,22 @@
                 <a href="https://www.google.com/maps?q=山口県宇部市南小串1-1-1" target="_blank" class="inline-block mt-4 text-y-accent font-semibold hover:underline transition">
                     <i class="fas fa-map-marked-alt mr-1"></i> Googleマップで確認する
                 </a>
-                <!-- 地図のプレースホルダー -->
+                <!-- アクセスセクションにも画像を散りばめる -->
                 <div class="mt-6 w-full h-80 bg-gray-200 rounded-lg flex items-center justify-center text-gray-500 overflow-hidden">
-                    <img src="https://placehold.co/800x400/ccd9e6/34495e?text=Google+Map+Embed" alt="Google Map Placeholder" class="w-full h-full object-cover">
+                    <!-- 画像3を使用 (Google Map Placeholderの代わり) -->
+                    <img src="images/画像(3).jpg" alt="山口大学医学部外観イメージ" class="access-image" onerror="this.onerror=null; this.src='https://placehold.co/800x450/ccd9e6/34495e?text=YAMAGUCHI+U+CAMPUS';" loading="lazy">
+                </div>
+            </div>
+            
+            <!-- 最後に小さな画像を2つ散りばめる -->
+            <div class="mt-10 grid grid-cols-2 gap-4">
+                <div class="scattered-image-card rounded-lg overflow-hidden">
+                    <!-- 画像4を使用 -->
+                    <img src="images/画像(4).jpg" alt="交流の様子" onerror="this.onerror=null; this.src='https://placehold.co/400x250/1f334a/ffffff?text=Image+4';" loading="lazy">
+                </div>
+                <div class="scattered-image-card rounded-lg overflow-hidden">
+                    <!-- 画像5を使用 -->
+                    <img src="images/画像(5).jpg" alt="地域活動の様子" onerror="this.onerror=null; this.src='https://placehold.co/400x250/1f334a/ffffff?text=Image+5';" loading="lazy">
                 </div>
             </div>
         </section>
@@ -266,7 +297,6 @@
     </footer>
 
     <!-- JavaScriptファイルは<body>の最後に配置 -->
-    <!-- 記事データファイル -->
     <script src="articles.js"></script>
     
     <script>
@@ -285,7 +315,7 @@
                     // 記事全体をリンク化
                     const link = document.createElement('a');
                     link.href = article.link || '#'; // リンクがなければ#にフォールバック
-                    link.className = 'block hover:text-y-accent'; 
+                    link.className = 'block hover:text-y-accent article-link-container'; 
                     
                     link.innerHTML = `
                         <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-1">
@@ -304,8 +334,6 @@
                 li.textContent = '記事データ（articles.js）の読み込みに失敗しました。ファイルが正しく配置されているか確認してください。';
                 articleList.appendChild(li);
             }
-            
-            // 旧「写真アーカイブ」セクションの処理を完全に削除しました。
         });
     </script>
 </body>
