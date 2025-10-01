@@ -72,7 +72,7 @@
             z-index: 10;
         }
 
-        /* 5. タイトルヘッダーの強調と透かし (タイトルの後ろに画像を薄く貼る工夫) */
+        /* 5. タイトルヘッダーの強調と透かし (タイトルの後ろに薄い画像を貼る工夫) */
         .section-title {
             position: relative;
             padding-left: 1rem; 
@@ -127,10 +127,25 @@
             aspect-ratio: 16 / 10;
         }
         
-        /* アクセスセクションの画像 */
-        #access .access-image {
-            object-fit: cover;
-            aspect-ratio: 16 / 9;
+        /* Google Map用のコンテナ */
+        .map-container {
+            position: relative;
+            overflow: hidden;
+            width: 100%;
+            /* 16:9 のアスペクト比を維持 */
+            padding-top: 56.25%; 
+            border-radius: 0.5rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        .map-container iframe {
+            position: absolute;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            right: 0;
+            width: 100%;
+            height: 100%;
+            border: 0;
         }
     </style>
 </head>
@@ -189,7 +204,7 @@
                             </p>
                         </div>
                         <div class="md:w-1/2 scattered-image-card rounded-lg overflow-hidden">
-                            <!-- 画像1を散りばめる -->
+                            <!-- 画像1を散りばめる (images/画像(1).jpg) -->
                             <img src="images/画像(1).jpg" alt="多様なキャリアを持つ学生たちの様子" onerror="this.onerror=null; this.src='https://placehold.co/800x500/1f334a/ffffff?text=Image+1+PlaceHolder';" loading="lazy">
                         </div>
                     </div>
@@ -202,11 +217,11 @@
                                 私たちの活動は、単なる交流にとどまりません。学内の勉強会、キャリアイベントの企画、地域医療への貢献など、多様な経験値を活かした独自の活動を展開しています。
                             </p>
                             <p>
-                                このウェブサイトでは、私たちが日々感じている「学士編入の魅力」や、多様な仲間との学びの深さを、少しでも皆様と共有できればと考えております。
+                                このウェブサイトでは、私たちが日々感じている「学士編入の魅力」や、多様な仲間との学びの深さを、皆様と共有できればと考えております。
                             </p>
                         </div>
                         <div class="md:w-1/2 scattered-image-card rounded-lg overflow-hidden">
-                            <!-- 画像2を散りばめる -->
+                            <!-- 画像2を散りばめる (images/画像(2).jpg) -->
                             <img src="images/画像(2).jpg" alt="勉強会の風景または協調性のイメージ" onerror="this.onerror=null; this.src='https://placehold.co/800x500/1f334a/ffffff?text=Image+2+PlaceHolder';" loading="lazy">
                         </div>
                     </div>
@@ -234,7 +249,7 @@
             </div>
         </section>
         
-        <!-- 2. 記事セクション (activitiesの内容を統合し、全てを動的ロード) (テクスチャ適用 + タイトル透かし) -->
+        <!-- 2. 記事セクション (テクスチャ適用 + タイトル透かし) -->
         <section id="articles" class="section-padding textured-section border-b border-gray-200">
             <div class="content-layer">
                 <div class="section-title" data-title-en="NEWS/BLOG">
@@ -250,7 +265,7 @@
             </div>
         </section>
 
-        <!-- 3. アクセスセクション -->
+        <!-- 3. アクセスセクション (Google Map実装) -->
         <section id="access" class="section-padding bg-gray-50 rounded-b-xl">
             <div class="section-title" data-title-en="ACCESS">
                 <h2 class="text-3xl font-bold text-y-text border-l-4 border-y-accent pl-4">
@@ -268,21 +283,26 @@
                 <a href="https://www.google.com/maps?q=山口県宇部市南小串1-1-1" target="_blank" class="inline-block mt-4 text-y-accent font-semibold hover:underline transition">
                     <i class="fas fa-map-marked-alt mr-1"></i> Googleマップで確認する
                 </a>
-                <!-- アクセスセクションにも画像を散りばめる -->
-                <div class="mt-6 w-full h-80 bg-gray-200 rounded-lg flex items-center justify-center text-gray-500 overflow-hidden">
-                    <!-- 画像3を使用 (Google Map Placeholderの代わり) -->
-                    <img src="images/画像(3).jpg" alt="山口大学医学部外観イメージ" class="access-image" onerror="this.onerror=null; this.src='https://placehold.co/800x450/ccd9e6/34495e?text=YAMAGUCHI+U+CAMPUS';" loading="lazy">
+                
+                <!-- Google Maps埋め込みエリア -->
+                <div class="mt-6 map-container">
+                    <iframe 
+                        src="https://maps.google.com/maps?q=山口県宇部市南小串1-1-1&z=15&output=embed" 
+                        allowfullscreen="" 
+                        loading="lazy" 
+                        referrerpolicy="no-referrer-when-downgrade">
+                    </iframe>
                 </div>
             </div>
             
-            <!-- 最後に小さな画像を2つ散りばめる -->
+            <!-- 最後に画像を2つ散りばめる -->
             <div class="mt-10 grid grid-cols-2 gap-4">
                 <div class="scattered-image-card rounded-lg overflow-hidden">
-                    <!-- 画像4を使用 -->
+                    <!-- 画像4を使用 (images/画像(4).jpg) -->
                     <img src="images/画像(4).jpg" alt="交流の様子" onerror="this.onerror=null; this.src='https://placehold.co/400x250/1f334a/ffffff?text=Image+4';" loading="lazy">
                 </div>
                 <div class="scattered-image-card rounded-lg overflow-hidden">
-                    <!-- 画像5を使用 -->
+                    <!-- 画像5を使用 (images/画像(5).jpg) -->
                     <img src="images/画像(5).jpg" alt="地域活動の様子" onerror="this.onerror=null; this.src='https://placehold.co/400x250/1f334a/ffffff?text=Image+5';" loading="lazy">
                 </div>
             </div>
