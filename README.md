@@ -51,16 +51,17 @@
             right: 0;
             bottom: 0;
             /* 薄いテクスチャのPlaceholder画像 */
-            background-image: url('https://placehold.co/1000x1000/ffffff/d1d5db?text=Subtle+Texture'); 
+            background-image: url('https://placehold.co/1000x1000/f0f4f7/d1d5db?text=Subtle+Texture'); 
             background-repeat: repeat;
-            opacity: 0.1; /* 透過度を極端に低く設定 */
+            opacity: 0.15; /* 透過度を調整 */
             z-index: 0;
             pointer-events: none; /* テキストの選択を邪魔しないように */
         }
 
         /* ヒーローセクションの背景をよりドラマチックに */
         #hero {
-            background-image: linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)), url('https://placehold.co/1500x500/2c3e50/ffffff?text=Yamaguchi+University+School+of+Medicine+Background');
+            /* 背景画像に濃いネイビーと透明のグラデーションをオーバーレイ */
+            background-image: linear-gradient(to bottom, rgba(31, 51, 74, 0.7), rgba(31, 51, 74, 0.7)), url('https://placehold.co/1500x450/2c3e50/ffffff?text=YAMAGUCHI+U+MEDICINE+ENTRANCE+BG');
             background-size: cover;
             background-position: center center;
             transition: background-image 0.5s ease;
@@ -81,13 +82,13 @@
             <div class="text-xl font-bold tracking-wider">
                 <a href="#hero" class="hover:text-y-accent transition duration-300">山口大学医学部医学科 学士編入生有志の会</a>
             </div>
-            <!-- ナビゲーションメニュー (「写真」を削除) -->
+            <!-- ナビゲーションメニュー (整理済) -->
             <nav class="mt-3 md:mt-0" id="main-nav">
                 <ul class="flex space-x-4">
                     <li><a href="#about" class="px-3 py-2 rounded-lg hover:bg-y-accent transition duration-300 flex items-center text-sm font-semibold"><i class="fas fa-home mr-1"></i>ホーム</a></li>
-                    <li><a href="#activities" class="px-3 py-2 rounded-lg hover:bg-y-accent transition duration-300 flex items-center text-sm font-semibold"><i class="fas fa-history mr-1"></i>活動記録</a></li>
                     <li><a href="#members" class="px-3 py-2 rounded-lg hover:bg-y-accent transition duration-300 flex items-center text-sm font-semibold"><i class="fas fa-users mr-1"></i>メンバー</a></li>
                     <li><a href="#articles" class="px-3 py-2 rounded-lg hover:bg-y-accent transition duration-300 flex items-center text-sm font-semibold"><i class="fas fa-book-open mr-1"></i>記事</a></li>
+                    <li><a href="#access" class="px-3 py-2 rounded-lg hover:bg-y-accent transition duration-300 flex items-center text-sm font-semibold"><i class="fas fa-map-marked-alt mr-1"></i>アクセス</a></li>
                 </ul>
             </nav>
         </div>
@@ -143,61 +144,49 @@
                 </div>
             </div>
         </section>
-
-        <!-- 2. 活動記録/お知らせセクション -->
-        <section id="activities" class="section-padding bg-gray-50 border-b border-gray-200">
-            <h2 class="text-3xl font-bold text-y-text mb-8 border-l-4 border-y-accent pl-4">
-                <i class="fas fa-bullhorn text-y-accent mr-2"></i>お知らせ / 活動記録
-            </h2>
-            <ul class="space-y-4" id="news-list">
-                <!-- お知らせリスト (静的データ) -->
-                <li class="bg-white p-5 rounded-lg shadow-md border-l-4 border-y-accent hover:shadow-xl transition duration-300">
-                    <span class="text-sm font-semibold text-gray-500 mr-3 inline-block w-20 md:w-auto">2022.04.11</span>
-                    <span class="text-gray-800">主に２年生の女子生徒を対象に、キャリアを考える会を開催しました。</span>
-                </li>
-                <li class="bg-white p-5 rounded-lg shadow-md border-l-4 border-y-accent hover:shadow-xl transition duration-300">
-                    <span class="text-sm font-semibold text-gray-500 mr-3 inline-block w-20 md:w-auto">2022.03.26</span>
-                    <span class="text-gray-800">令和3年度卒業の堤春菜が、令和３年度学長表彰の（学業成績優秀者の部）として推薦され、審議の結果、表彰者に決定されました。</span>
-                </li>
-                <li class="bg-white p-5 rounded-lg shadow-md border-l-4 border-y-accent hover:shadow-xl transition duration-300">
-                    <span class="text-sm font-semibold text-gray-500 mr-3 inline-block w-20 md:w-auto">2022.02.26</span>
-                    <span class="text-gray-800">山口大学医学部学士編入生有志の会のホームページを開設しました。</span>
-                </li>
-                <li class="bg-white p-5 rounded-lg shadow-md border-l-4 border-y-accent hover:shadow-xl transition duration-300">
-                    <span class="text-sm font-semibold text-gray-500 mr-3 inline-block w-20 md:w-auto">2022.02.09</span>
-                    <span class="text-gray-800">学年の壁を超えて、学士編入生の上級生が2年生のテュートリアル実験に被験者として参加してくれました。</span>
-                </li>
-                <li class="bg-white p-5 rounded-lg shadow-md border-l-4 border-y-accent hover:shadow-xl transition duration-300">
-                    <span class="text-sm font-semibold text-gray-500 mr-3 inline-block w-20 md:w-auto">2022.01.11</span>
-                    <span class="text-gray-800">編入2年生の才川優輔が第2回AI勉強会を開催しました。</span>
-                </li>
-                <li class="bg-white p-5 rounded-lg shadow-md border-l-4 border-y-accent hover:shadow-xl transition duration-300">
-                    <span class="text-sm font-semibold text-gray-500 mr-3 inline-block w-20 md:w-auto">2021.12.18</span>
-                    <span class="text-gray-800">令和4年度学士編入学試験合格者への説明会を行いました。</span>
-                </li>
-                <li class="bg-white p-5 rounded-lg shadow-md border-l-4 border-y-accent hover:shadow-xl transition duration-300">
-                    <span class="text-sm font-semibold text-gray-500 mr-3 inline-block w-20 md:w-auto">2021.12.17</span>
-                    <span class="text-gray-800">編入6年生の追いコンを行いました。</span>
-                </li>
-                <li class="bg-white p-5 rounded-lg shadow-md border-l-4 border-y-accent hover:shadow-xl transition duration-300">
-                    <span class="text-sm font-semibold text-gray-500 mr-3 inline-block w-20 md:w-auto">2022.12.09</span>
-                    <span class="text-gray-800">編入2年生の才川優輔が第1回AI勉強会を開催しました。</span>
-                </li>
-            </ul>
-        </section>
-
-        <!-- 3. 記事セクション (article.jsから動的ロード) (テクスチャ適用) -->
+        
+        <!-- 2. 記事セクション (activitiesの内容を統合し、全てを動的ロード) (テクスチャ適用) -->
         <section id="articles" class="section-padding textured-section border-b border-gray-200">
             <div class="content-layer">
                 <h2 class="text-3xl font-bold text-y-text mb-8 border-l-4 border-y-accent pl-4">
-                    <i class="fas fa-feather-alt text-y-accent mr-2"></i>記事
+                    <i class="fas fa-feather-alt text-y-accent mr-2"></i>記事 / お知らせ
                 </h2>
-                <p class="mb-8 text-gray-600">メンバーによるコラムや、学士編入の体験談などを掲載しています。</p>
+                <p class="mb-8 text-gray-600">メンバーによるコラム、学士編入の体験談、および最新の活動記録を掲載しています。</p>
                 <ul class="space-y-6" id="article-list">
                     <!-- 記事はarticles.jsのデータを元にJavaScriptでここに挿入されます -->
                 </ul>
             </div>
         </section>
+
+        <!-- 3. メンバーセクション (仮) -->
+        <section id="members" class="section-padding bg-gray-50 border-b border-gray-200">
+            <h2 class="text-3xl font-bold text-y-text mb-8 border-l-4 border-y-accent pl-4">
+                <i class="fas fa-users text-y-accent mr-2"></i>メンバー
+            </h2>
+            <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <!-- メンバーカードのプレースホルダー -->
+                <div class="bg-white p-6 rounded-lg shadow-md text-center">
+                    <img src="https://placehold.co/100x100/3498db/ffffff?text=M.A" alt="メンバーA" class="rounded-full w-24 h-24 mx-auto mb-4 border-4 border-y-accent">
+                    <h3 class="text-xl font-bold text-y-text">メンバー A</h3>
+                    <p class="text-gray-600">所属学年: 4年生</p>
+                    <p class="text-sm text-gray-500 mt-2">（前職：ITエンジニア）</p>
+                </div>
+                <div class="bg-white p-6 rounded-lg shadow-md text-center">
+                    <img src="https://placehold.co/100x100/3498db/ffffff?text=M.B" alt="メンバーB" class="rounded-full w-24 h-24 mx-auto mb-4 border-4 border-y-accent">
+                    <h3 class="text-xl font-bold text-y-text">メンバー B</h3>
+                    <p class="text-gray-600">所属学年: 2年生</p>
+                    <p class="text-sm text-gray-500 mt-2">（前職：教師）</p>
+                </div>
+                <div class="bg-white p-6 rounded-lg shadow-md text-center">
+                    <img src="https://placehold.co/100x100/3498db/ffffff?text=M.C" alt="メンバーC" class="rounded-full w-24 h-24 mx-auto mb-4 border-4 border-y-accent">
+                    <h3 class="text-xl font-bold text-y-text">メンバー C</h3>
+                    <p class="text-gray-600">所属学年: 6年生</p>
+                    <p class="text-sm text-gray-500 mt-2">（前職：製薬研究者）</p>
+                </div>
+            </div>
+            <p class="text-center text-gray-600 mt-8">※メンバー構成は毎年変動します。</p>
+        </section>
+
 
         <!-- 4. アクセスセクション -->
         <section id="access" class="section-padding bg-gray-50 rounded-b-xl">
@@ -235,20 +224,30 @@
     
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            // 活動写真セクションが削除されたため、画像に関する処理は不要です。
-
             // --- 記事の動的生成 (articles.jsのデータを使用) ---
             const articleList = document.getElementById('article-list');
             
             if (typeof articles !== 'undefined' && Array.isArray(articles)) {
+                // 日付で降順にソート（最新のものが上に来るように）
+                articles.sort((a, b) => new Date(b.date.replace(/\./g, '/')) - new Date(a.date.replace(/\./g, '/')));
+
                 articles.forEach(article => {
                     const li = document.createElement('li');
-                    li.className = 'bg-white p-5 rounded-xl shadow-md border-l-4 border-y-accent hover:shadow-lg transition duration-300';
-                    li.innerHTML = `
-                        <h3 class="text-xl font-bold text-y-text mb-1">${article.title}</h3>
-                        <p class="text-sm text-gray-500 mb-2">${article.date}</p>
-                        <p class="text-gray-700">${article.summary}</p>
+                    li.className = 'bg-white p-5 rounded-xl shadow-md border-l-4 border-y-accent hover:shadow-lg transition duration-300 transform hover:scale-[1.01]';
+                    
+                    // 記事全体をリンク化
+                    const link = document.createElement('a');
+                    link.href = article.link || '#'; // リンクがなければ#にフォールバック
+                    link.className = 'block hover:text-y-accent'; 
+                    
+                    link.innerHTML = `
+                        <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-1">
+                            <h3 class="text-xl font-bold text-y-text mb-1 md:mb-0">${article.title}</h3>
+                            <p class="text-sm font-semibold text-gray-500 md:text-right">${article.date}</p>
+                        </div>
+                        <p class="text-gray-700 text-base">${article.summary}</p>
                     `;
+                    li.appendChild(link);
                     articleList.appendChild(li);
                 });
             } else {
