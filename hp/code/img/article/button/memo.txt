@@ -1,8 +1,0 @@
-縦：25px
-横：110px
-
-赤：#F04C1A
-青：#2560FF
-緑：#8CC14A
-
-Font:(J)HGRSGU
