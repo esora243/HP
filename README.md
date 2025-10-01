@@ -1,4 +1,3 @@
-<!DOCTYPE html>
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
@@ -72,6 +71,25 @@
             position: relative;
             z-index: 10;
         }
+        
+        /* 写真アーカイブのスタイル */
+        .archive-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 1rem;
+        }
+        .archive-grid img {
+            width: 100%;
+            height: 180px;
+            object-fit: cover;
+            border-radius: 0.5rem;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease;
+        }
+        .archive-grid img:hover {
+            transform: scale(1.03);
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+        }
     </style>
 </head>
 <body class="bg-y-background font-sans">
@@ -82,12 +100,13 @@
             <div class="text-xl font-bold tracking-wider">
                 <a href="#hero" class="hover:text-y-accent transition duration-300">山口大学医学部医学科 学士編入生有志の会</a>
             </div>
-            <!-- ナビゲーションメニュー (整理済) -->
+            <!-- ナビゲーションメニュー (整理済: 活動記録を記事に統合) -->
             <nav class="mt-3 md:mt-0" id="main-nav">
                 <ul class="flex space-x-4">
                     <li><a href="#about" class="px-3 py-2 rounded-lg hover:bg-y-accent transition duration-300 flex items-center text-sm font-semibold"><i class="fas fa-home mr-1"></i>ホーム</a></li>
                     <li><a href="#members" class="px-3 py-2 rounded-lg hover:bg-y-accent transition duration-300 flex items-center text-sm font-semibold"><i class="fas fa-users mr-1"></i>メンバー</a></li>
                     <li><a href="#articles" class="px-3 py-2 rounded-lg hover:bg-y-accent transition duration-300 flex items-center text-sm font-semibold"><i class="fas fa-book-open mr-1"></i>記事</a></li>
+                    <li><a href="#archive" class="px-3 py-2 rounded-lg hover:bg-y-accent transition duration-300 flex items-center text-sm font-semibold"><i class="fas fa-images mr-1"></i>写真アーカイブ</a></li>
                     <li><a href="#access" class="px-3 py-2 rounded-lg hover:bg-y-accent transition duration-300 flex items-center text-sm font-semibold"><i class="fas fa-map-marked-alt mr-1"></i>アクセス</a></li>
                 </ul>
             </nav>
@@ -186,9 +205,20 @@
             </div>
             <p class="text-center text-gray-600 mt-8">※メンバー構成は毎年変動します。</p>
         </section>
+        
+        <!-- 4. 写真アーカイブセクション (新設) -->
+        <section id="archive" class="section-padding border-b border-gray-200">
+            <h2 class="text-3xl font-bold text-y-text mb-8 border-l-4 border-y-accent pl-4">
+                <i class="fas fa-images text-y-accent mr-2"></i>写真アーカイブ
+            </h2>
+            <p class="mb-6 text-gray-600">活動の一部を抜粋して紹介します。（画像パス `images/画像(i).jpg` を使用）</p>
+            <div class="archive-grid" id="photo-archive-grid">
+                <!-- 写真はJavaScriptでここに挿入されます -->
+            </div>
+        </section>
 
 
-        <!-- 4. アクセスセクション -->
+        <!-- 5. アクセスセクション -->
         <section id="access" class="section-padding bg-gray-50 rounded-b-xl">
             <h2 class="text-3xl font-bold text-y-text mb-8 border-l-4 border-y-accent pl-4">
                 <i class="fas fa-map-marker-alt text-y-accent mr-2"></i>アクセス
@@ -256,6 +286,23 @@
                 li.className = 'text-center text-gray-500 p-8';
                 li.textContent = '記事データ（articles.js）の読み込みに失敗しました。ファイルが正しく配置されているか確認してください。';
                 articleList.appendChild(li);
+            }
+            
+            // --- 写真アーカイブの動的生成 (画像パス修正済み) ---
+            const photoArchiveGrid = document.getElementById('photo-archive-grid');
+            const photoCount = 6; // 表示する画像の数
+            
+            for (let i = 1; i <= photoCount; i++) {
+                const img = document.createElement('img');
+                img.src = `images/画像(${i}).jpg`; // **** 修正された画像パス ****
+                img.alt = `アーカイブ写真 ${i}`;
+                
+                // 画像が見つからない場合のフォールバック (テスト用)
+                img.onerror = function() {
+                    img.src = `https://placehold.co/200x180/94a3b8/ffffff?text=Image+${i}`;
+                };
+                
+                photoArchiveGrid.appendChild(img);
             }
         });
     </script>
