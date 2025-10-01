@@ -15,7 +15,7 @@
                 extend: {
                     colors: {
                         'y-primary': '#1f334a', // より濃いネイビー (メインカラー)
-                        'y-accent': '#e74c3c',  // 情熱的な赤系 (アクセント)
+                        'y-accent': '#c0392b',  // 深い赤 (アクセント)
                         'y-background': '#f4f7f6', // 背景色
                         'y-text': '#2c3e50', // テキスト色
                     },
@@ -36,7 +36,8 @@
                 padding: 6rem 3rem;
             }
         }
-        /* テキストの背景に薄いテクスチャ/画像を適用するためのクラス */
+        
+        /* テキストの後ろに薄いテクスチャ/画像を適用するためのクラス */
         .textured-section {
             background-color: #ffffff; /* ベースの背景色 */
             position: relative;
@@ -49,21 +50,20 @@
             left: 0;
             right: 0;
             bottom: 0;
-            /* 薄いテクスチャのPlaceholder画像 */
-            background-image: url('https://placehold.co/1000x1000/f0f4f7/d1d5db?text=Subtle+Texture'); 
+            /* 背景テクスチャ (より繊細なドットパターンをシミュレート) */
+            background-image: url('https://placehold.co/1000x1000/ffffff/d1d5db?text=Subtle+Texture'); 
             background-repeat: repeat;
-            opacity: 0.15; /* 透過度を調整 */
+            opacity: 0.1; /* 透過度を低く設定 */
             z-index: 0;
-            pointer-events: none; /* テキストの選択を邪魔しないように */
+            pointer-events: none;
         }
 
-        /* ヒーローセクションの背景をよりドラマチックに */
+        /* ヒーローセクションの背景 */
         #hero {
             /* 背景画像に濃いネイビーと透明のグラデーションをオーバーレイ */
-            background-image: linear-gradient(to bottom, rgba(31, 51, 74, 0.7), rgba(31, 51, 74, 0.7)), url('https://placehold.co/1500x450/2c3e50/ffffff?text=YAMAGUCHI+U+MEDICINE+ENTRANCE+BG');
+            background-image: linear-gradient(to bottom, rgba(31, 51, 74, 0.75), rgba(31, 51, 74, 0.75)), url('https://placehold.co/1500x450/2c3e50/ffffff?text=YAMAGUCHI+U+MEDICINE+ENTRANCE+BG');
             background-size: cover;
             background-position: center center;
-            transition: background-image 0.5s ease;
         }
 
         /* セクションコンテンツをテクスチャの上に配置 */
@@ -71,24 +71,42 @@
             position: relative;
             z-index: 10;
         }
+
+        /* タイトルヘッダーの強調と透かし */
+        .section-title {
+            position: relative;
+            padding-left: 1rem; /* border-l-4と合わせる */
+            margin-bottom: 2rem;
+            z-index: 10;
+        }
+
+        /* タイトルの後ろに薄い画像を貼る工夫 */
+        .section-title h2 {
+            position: relative;
+            z-index: 10;
+            font-size: 2.25rem;
+            line-height: 1; /* 行の高さを詰める */
+        }
         
-        /* 写真アーカイブのスタイル */
-        .archive-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-            gap: 1rem;
+        .section-title::after {
+            content: attr(data-title-en); /* CSSでの属性値取得 */
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 8vw; /* 画面サイズに応じて大きくする */
+            color: rgba(22, 45, 68, 0.05); /* 非常に薄いネイビー */
+            font-weight: 800; /* 極太 */
+            letter-spacing: 0.1em;
+            pointer-events: none;
+            white-space: nowrap;
+            z-index: 0;
         }
-        .archive-grid img {
-            width: 100%;
-            height: 180px;
-            object-fit: cover;
-            border-radius: 0.5rem;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-            transition: transform 0.3s ease;
-        }
-        .archive-grid img:hover {
-            transform: scale(1.03);
-            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+
+        @media (min-width: 768px) {
+             .section-title::after {
+                font-size: 5vw;
+            }
         }
     </style>
 </head>
@@ -100,13 +118,12 @@
             <div class="text-xl font-bold tracking-wider">
                 <a href="#hero" class="hover:text-y-accent transition duration-300">山口大学医学部医学科 学士編入生有志の会</a>
             </div>
-            <!-- ナビゲーションメニュー (整理済: 活動記録を記事に統合) -->
+            <!-- ナビゲーションメニュー (写真アーカイブ削除済み) -->
             <nav class="mt-3 md:mt-0" id="main-nav">
                 <ul class="flex space-x-4">
                     <li><a href="#about" class="px-3 py-2 rounded-lg hover:bg-y-accent transition duration-300 flex items-center text-sm font-semibold"><i class="fas fa-home mr-1"></i>ホーム</a></li>
                     <li><a href="#members" class="px-3 py-2 rounded-lg hover:bg-y-accent transition duration-300 flex items-center text-sm font-semibold"><i class="fas fa-users mr-1"></i>メンバー</a></li>
                     <li><a href="#articles" class="px-3 py-2 rounded-lg hover:bg-y-accent transition duration-300 flex items-center text-sm font-semibold"><i class="fas fa-book-open mr-1"></i>記事</a></li>
-                    <li><a href="#archive" class="px-3 py-2 rounded-lg hover:bg-y-accent transition duration-300 flex items-center text-sm font-semibold"><i class="fas fa-images mr-1"></i>写真アーカイブ</a></li>
                     <li><a href="#access" class="px-3 py-2 rounded-lg hover:bg-y-accent transition duration-300 flex items-center text-sm font-semibold"><i class="fas fa-map-marked-alt mr-1"></i>アクセス</a></li>
                 </ul>
             </nav>
@@ -127,13 +144,16 @@
 
     <main class="max-w-6xl mx-auto bg-white shadow-2xl rounded-xl -mt-16 relative z-10">
         
-        <!-- 1. ホーム/紹介セクション (テクスチャ適用) -->
+        <!-- 1. ホーム/紹介セクション (テクスチャ適用 + タイトル透かし) -->
         <section id="about" class="section-padding textured-section rounded-t-xl border-b border-gray-200">
             <div class="content-layer">
-                <h2 class="text-3xl font-bold text-y-text mb-8 border-l-4 border-y-accent pl-4">
-                    <i class="fas fa-graduation-cap text-y-accent mr-2"></i>有志の会について
-                </h2>
-                <div class="space-y-6 text-lg text-gray-700">
+                <div class="section-title" data-title-en="ABOUT">
+                    <h2 class="text-3xl font-bold text-y-text border-l-4 border-y-accent pl-4">
+                        <i class="fas fa-graduation-cap text-y-accent mr-2"></i>有志の会について
+                    </h2>
+                </div>
+                
+                <div class="space-y-6 text-lg text-gray-700 mt-8">
                     <p>
                         当会は、“異なるキャリアを歩んできた人たちの繋がりが価値観の広がりに繋がるのではないか”という想いから設立されました。大それたことをいうとこのような理念ですが、実際は「学士編入生って色々な人がいるから、縦横の繋がりを作ったらきっと面白いよね？」という、よりカジュアルな気持ちでスタートしています。
                     </p>
@@ -164,13 +184,16 @@
             </div>
         </section>
         
-        <!-- 2. 記事セクション (activitiesの内容を統合し、全てを動的ロード) (テクスチャ適用) -->
+        <!-- 2. 記事セクション (activitiesの内容を統合し、全てを動的ロード) (テクスチャ適用 + タイトル透かし) -->
         <section id="articles" class="section-padding textured-section border-b border-gray-200">
             <div class="content-layer">
-                <h2 class="text-3xl font-bold text-y-text mb-8 border-l-4 border-y-accent pl-4">
-                    <i class="fas fa-feather-alt text-y-accent mr-2"></i>記事 / お知らせ
-                </h2>
-                <p class="mb-8 text-gray-600">メンバーによるコラム、学士編入の体験談、および最新の活動記録を掲載しています。</p>
+                <div class="section-title" data-title-en="NEWS/BLOG">
+                    <h2 class="text-3xl font-bold text-y-text border-l-4 border-y-accent pl-4">
+                        <i class="fas fa-feather-alt text-y-accent mr-2"></i>記事 / お知らせ
+                    </h2>
+                </div>
+                
+                <p class="mb-8 text-gray-600 mt-8">メンバーによるコラム、学士編入の体験談、および最新の活動記録を掲載しています。</p>
                 <ul class="space-y-6" id="article-list">
                     <!-- 記事はarticles.jsのデータを元にJavaScriptでここに挿入されます -->
                 </ul>
@@ -179,51 +202,45 @@
 
         <!-- 3. メンバーセクション (仮) -->
         <section id="members" class="section-padding bg-gray-50 border-b border-gray-200">
-            <h2 class="text-3xl font-bold text-y-text mb-8 border-l-4 border-y-accent pl-4">
-                <i class="fas fa-users text-y-accent mr-2"></i>メンバー
-            </h2>
-            <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <div class="section-title" data-title-en="MEMBERS">
+                <h2 class="text-3xl font-bold text-y-text border-l-4 border-y-accent pl-4">
+                    <i class="fas fa-users text-y-accent mr-2"></i>メンバー
+                </h2>
+            </div>
+            
+            <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8 mt-8">
                 <!-- メンバーカードのプレースホルダー -->
-                <div class="bg-white p-6 rounded-lg shadow-md text-center">
-                    <img src="https://placehold.co/100x100/3498db/ffffff?text=M.A" alt="メンバーA" class="rounded-full w-24 h-24 mx-auto mb-4 border-4 border-y-accent">
+                <div class="bg-white p-6 rounded-lg shadow-md text-center border-t-4 border-y-accent">
+                    <img src="https://placehold.co/100x100/3498db/ffffff?text=M.A" alt="メンバーA" class="rounded-full w-24 h-24 mx-auto mb-4 border-4 border-gray-200">
                     <h3 class="text-xl font-bold text-y-text">メンバー A</h3>
                     <p class="text-gray-600">所属学年: 4年生</p>
                     <p class="text-sm text-gray-500 mt-2">（前職：ITエンジニア）</p>
                 </div>
-                <div class="bg-white p-6 rounded-lg shadow-md text-center">
-                    <img src="https://placehold.co/100x100/3498db/ffffff?text=M.B" alt="メンバーB" class="rounded-full w-24 h-24 mx-auto mb-4 border-4 border-y-accent">
+                <div class="bg-white p-6 rounded-lg shadow-md text-center border-t-4 border-y-accent">
+                    <img src="https://placehold.co/100x100/3498db/ffffff?text=M.B" alt="メンバーB" class="rounded-full w-24 h-24 mx-auto mb-4 border-4 border-gray-200">
                     <h3 class="text-xl font-bold text-y-text">メンバー B</h3>
                     <p class="text-gray-600">所属学年: 2年生</p>
                     <p class="text-sm text-gray-500 mt-2">（前職：教師）</p>
                 </div>
-                <div class="bg-white p-6 rounded-lg shadow-md text-center">
-                    <img src="https://placehold.co/100x100/3498db/ffffff?text=M.C" alt="メンバーC" class="rounded-full w-24 h-24 mx-auto mb-4 border-4 border-y-accent">
+                <div class="bg-white p-6 rounded-lg shadow-md text-center border-t-4 border-y-accent">
+                    <img src="https://placehold.co/100x100/3498db/ffffff?text=M.C" alt="メンバーC" class="rounded-full w-24 h-24 mx-auto mb-4 border-4 border-gray-200">
                     <h3 class="text-xl font-bold text-y-text">メンバー C</h3>
                     <p class="text-gray-600">所属学年: 6年生</p>
                     <p class="text-sm text-gray-500 mt-2">（前職：製薬研究者）</p>
                 </div>
             </div>
-            <p class="text-center text-gray-600 mt-8">※メンバー構成は毎年変動します。</p>
+            <p class="text-center text-gray-600 mt-8">※メンバー構成は毎年変動します。詳細については個別記事をご覧ください。</p>
         </section>
         
-        <!-- 4. 写真アーカイブセクション (新設) -->
-        <section id="archive" class="section-padding border-b border-gray-200">
-            <h2 class="text-3xl font-bold text-y-text mb-8 border-l-4 border-y-accent pl-4">
-                <i class="fas fa-images text-y-accent mr-2"></i>写真アーカイブ
-            </h2>
-            <p class="mb-6 text-gray-600">活動の一部を抜粋して紹介します。（画像パス `images/画像(i).jpg` を使用）</p>
-            <div class="archive-grid" id="photo-archive-grid">
-                <!-- 写真はJavaScriptでここに挿入されます -->
-            </div>
-        </section>
-
-
-        <!-- 5. アクセスセクション -->
+        <!-- 4. アクセスセクション -->
         <section id="access" class="section-padding bg-gray-50 rounded-b-xl">
-            <h2 class="text-3xl font-bold text-y-text mb-8 border-l-4 border-y-accent pl-4">
-                <i class="fas fa-map-marker-alt text-y-accent mr-2"></i>アクセス
-            </h2>
-            <div class="bg-white p-6 rounded-lg shadow-xl border border-gray-200">
+            <div class="section-title" data-title-en="ACCESS">
+                <h2 class="text-3xl font-bold text-y-text mb-8 border-l-4 border-y-accent pl-4">
+                    <i class="fas fa-map-marker-alt text-y-accent mr-2"></i>アクセス
+                </h2>
+            </div>
+            
+            <div class="bg-white p-6 rounded-lg shadow-xl border border-gray-200 mt-8">
                 <p class="text-xl font-semibold mb-2 text-y-text">山口大学医学部</p>
                 <p class="text-gray-600 mb-4">Yamaguchi University Faculty of Medicine and Health Sciences</p>
                 <address class="not-italic text-lg text-gray-800">
@@ -288,22 +305,7 @@
                 articleList.appendChild(li);
             }
             
-            // --- 写真アーカイブの動的生成 (画像パス修正済み) ---
-            const photoArchiveGrid = document.getElementById('photo-archive-grid');
-            const photoCount = 6; // 表示する画像の数
-            
-            for (let i = 1; i <= photoCount; i++) {
-                const img = document.createElement('img');
-                img.src = `images/画像(${i}).jpg`; // **** 修正された画像パス ****
-                img.alt = `アーカイブ写真 ${i}`;
-                
-                // 画像が見つからない場合のフォールバック (テスト用)
-                img.onerror = function() {
-                    img.src = `https://placehold.co/200x180/94a3b8/ffffff?text=Image+${i}`;
-                };
-                
-                photoArchiveGrid.appendChild(img);
-            }
+            // 旧「写真アーカイブ」セクションの処理を完全に削除しました。
         });
     </script>
 </body>
