@@ -1,13 +1,224 @@
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>My Google AI Studio App</title>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
-  </body>
-</html>
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>PDF Editor - ブラウザで動くPDF編集ツール</title>
+<link rel="stylesheet" href="css/style.css" />
 
+<!-- 外部ライブラリ (CDN) -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.0/fabric.min.js"></script>
+</head>
+<body>
+
+<!-- ========== ヘッダー ========== -->
+<header class="app-header">
+  <div class="brand">
+    <span class="logo">📄</span>
+    <h1>PDF Editor</h1>
+    <span class="version">v1.0</span>
+  </div>
+  <div class="header-actions">
+    <button id="btn-open" class="btn btn-primary">
+      <span>📂</span> PDFを開く
+    </button>
+    <button id="btn-add-blank" class="btn" disabled>
+      <span>＋</span> 空白ページ追加
+    </button>
+    <button id="btn-merge" class="btn" disabled>
+      <span>🔗</span> 別PDFを結合
+    </button>
+    <button id="btn-download" class="btn btn-success" disabled>
+      <span>💾</span> ダウンロード
+    </button>
+    <button id="btn-help" class="btn btn-ghost" title="ヘルプ">？</button>
+  </div>
+  <input type="file" id="file-input" accept="application/pdf" hidden />
+  <input type="file" id="file-input-merge" accept="application/pdf" hidden />
+</header>
+
+<!-- ========== メインレイアウト ========== -->
+<main class="app-main">
+
+  <!-- 左サイドバー: ページサムネイル -->
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <h2>📑 ページ一覧</h2>
+      <small class="hint">ドラッグで並び替え</small>
+    </div>
+    <div id="thumbnail-list" class="thumbnail-list">
+      <div class="empty-state">
+        <p>📄</p>
+        <p>PDFを開いてください</p>
+      </div>
+    </div>
+    <div class="sidebar-footer">
+      <span id="page-count-info">0 ページ</span>
+    </div>
+  </aside>
+
+  <!-- 中央: PDFビューア + 注釈キャンバス -->
+  <section class="viewer-section">
+    <!-- ツールバー -->
+    <div class="toolbar">
+      <div class="toolbar-group">
+        <button class="tool-btn active" data-tool="select" title="選択">🖱️</button>
+        <button class="tool-btn" data-tool="text" title="テキスト">T</button>
+        <button class="tool-btn" data-tool="highlight" title="ハイライト">🖍️</button>
+        <button class="tool-btn" data-tool="rect" title="矩形">▭</button>
+        <button class="tool-btn" data-tool="circle" title="円">◯</button>
+        <button class="tool-btn" data-tool="arrow" title="矢印">➤</button>
+        <button class="tool-btn" data-tool="draw" title="フリーハンド">✏️</button>
+        <button class="tool-btn" data-tool="note" title="付箋コメント">📌</button>
+      </div>
+
+      <div class="toolbar-divider"></div>
+
+      <div class="toolbar-group">
+        <label class="tool-label">色</label>
+        <input type="color" id="color-picker" value="#ff3b30" />
+        <label class="tool-label">太さ</label>
+        <input type="range" id="stroke-width" min="1" max="20" value="3" />
+        <span id="stroke-value">3</span>
+      </div>
+
+      <div class="toolbar-divider"></div>
+
+      <div class="toolbar-group">
+        <button id="btn-delete-annot" class="btn btn-sm">🗑️ 注釈削除</button>
+        <button id="btn-rotate-left" class="btn btn-sm" disabled>↺ 左回転</button>
+        <button id="btn-rotate-right" class="btn btn-sm" disabled>↻ 右回転</button>
+        <button id="btn-delete-page" class="btn btn-sm btn-danger" disabled>✖ ページ削除</button>
+      </div>
+
+      <div class="toolbar-divider"></div>
+
+      <div class="toolbar-group">
+        <button id="btn-zoom-out" class="btn btn-sm">−</button>
+        <span id="zoom-level">100%</span>
+        <button id="btn-zoom-in" class="btn btn-sm">＋</button>
+        <button id="btn-zoom-fit" class="btn btn-sm">⤢ 自動</button>
+      </div>
+    </div>
+
+    <!-- ビューア -->
+    <div id="viewer-wrapper" class="viewer-wrapper">
+      <div id="viewer-empty" class="viewer-empty">
+        <div class="welcome-box">
+          <h2>📄 PDF Editorへようこそ</h2>
+          <p>左上の「PDFを開く」ボタン、またはここにファイルをドラッグ＆ドロップしてください。</p>
+          <ul class="feature-list">
+            <li>✅ ページの追加・削除・並び替え・回転</li>
+            <li>✅ テキスト・図形・ハイライト・フリーハンド注釈</li>
+            <li>✅ 付箋コメント機能</li>
+            <li>✅ 複数PDFの結合</li>
+            <li>✅ 編集済みPDFのダウンロード</li>
+            <li>🔒 すべての処理がブラウザ内で完結（プライバシー安全）</li>
+          </ul>
+          <button class="btn btn-primary btn-large" onclick="document.getElementById('file-input').click()">PDFを選択</button>
+        </div>
+      </div>
+      <div id="viewer-canvas-wrapper" class="canvas-wrapper" style="display:none">
+        <canvas id="pdf-canvas"></canvas>
+        <canvas id="annotation-canvas"></canvas>
+      </div>
+    </div>
+
+    <!-- ステータスバー -->
+    <div class="status-bar">
+      <span id="status-page">ページ - / -</span>
+      <span id="status-message">準備完了</span>
+    </div>
+  </section>
+
+  <!-- 右サイドバー: コメント一覧 -->
+  <aside class="comments-panel">
+    <div class="sidebar-header">
+      <h2>💬 コメント</h2>
+      <button id="btn-add-comment" class="btn btn-sm" disabled>＋</button>
+    </div>
+    <div id="comment-list" class="comment-list">
+      <div class="empty-state">
+        <p>コメントはまだありません</p>
+        <small>付箋ツール（📌）でページにコメントを追加できます</small>
+      </div>
+    </div>
+  </aside>
+
+</main>
+
+<!-- ========== モーダル: ヘルプ ========== -->
+<div id="help-modal" class="modal" hidden>
+  <div class="modal-content">
+    <div class="modal-header">
+      <h2>📖 使い方</h2>
+      <button class="modal-close" onclick="document.getElementById('help-modal').hidden=true">✖</button>
+    </div>
+    <div class="modal-body">
+      <h3>基本操作</h3>
+      <ul>
+        <li><strong>PDFを開く</strong>: ヘッダーの「PDFを開く」またはドラッグ＆ドロップ</li>
+        <li><strong>ページ並び替え</strong>: 左サイドバーのサムネイルをドラッグ</li>
+        <li><strong>ページ削除</strong>: サムネイル選択 → ツールバー「ページ削除」</li>
+        <li><strong>ページ回転</strong>: ツールバーの ↺ ↻</li>
+        <li><strong>空白ページ追加</strong>: ヘッダー「＋ 空白ページ追加」</li>
+        <li><strong>別PDF結合</strong>: ヘッダー「🔗 別PDFを結合」</li>
+      </ul>
+      <h3>注釈ツール</h3>
+      <ul>
+        <li><strong>T</strong> テキスト: クリックで文字入力</li>
+        <li><strong>🖍️</strong> ハイライト: ドラッグで蛍光マーカー</li>
+        <li><strong>▭ ◯</strong> 図形: ドラッグで矩形・円</li>
+        <li><strong>➤</strong> 矢印: ドラッグで矢印</li>
+        <li><strong>✏️</strong> フリーハンド: ドラッグで自由描画</li>
+        <li><strong>📌</strong> 付箋: クリックでコメント追加</li>
+      </ul>
+      <h3>保存</h3>
+      <p>「💾 ダウンロード」で注釈・編集を反映したPDFを保存します。</p>
+      <h3>プライバシー</h3>
+      <p>すべての処理がブラウザ内で完結します。ファイルはサーバーに送信されません。</p>
+    </div>
+  </div>
+</div>
+
+<!-- ========== モーダル: 付箋コメント編集 ========== -->
+<div id="note-modal" class="modal" hidden>
+  <div class="modal-content modal-sm">
+    <div class="modal-header">
+      <h2>📌 コメント</h2>
+      <button class="modal-close" onclick="closeNoteModal()">✖</button>
+    </div>
+    <div class="modal-body">
+      <label>作成者</label>
+      <input type="text" id="note-author" placeholder="名前（任意）" />
+      <label>コメント内容</label>
+      <textarea id="note-content" rows="5" placeholder="コメントを入力..."></textarea>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-danger" onclick="deleteCurrentNote()">削除</button>
+      <button class="btn btn-primary" onclick="saveCurrentNote()">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- ドロップオーバーレイ -->
+<div id="drop-overlay" class="drop-overlay" hidden>
+  <div class="drop-message">📥 ここにドロップしてPDFを開く</div>
+</div>
+
+<!-- トースト通知 -->
+<div id="toast-container" class="toast-container"></div>
+
+<!-- スクリプト -->
+<script src="js/utils.js"></script>
+<script src="js/pdf-renderer.js"></script>
+<script src="js/annotations.js"></script>
+<script src="js/comments.js"></script>
+<script src="js/page-manager.js"></script>
+<script src="js/exporter.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
