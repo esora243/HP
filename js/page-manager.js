@@ -1,35 +1,23 @@
 /* ============================================
-   page-manager.js - ページ管理 (順序・追加・削除・サムネ)
+   page-manager.js - ページ管理 + 複数選択 + 一括操作
    ============================================ */
 
 const PageManager = {
-  // pageOrder: 表示順に並んだエントリ配列
-  //   各要素: { src: 'main' | docId, realIndex, key }
-  //   - main: 元PDF (PdfRenderer.pdfDoc)
-  //   - docId: 結合した別PDFの参照ID (extraDocs[docId])
-  //   - 'blank': 空白ページ
-  // ただし PdfRenderer は元PDFのページしか描画できないため
-  // 「main以外」のページは事前に元PDFに pdf-lib でマージしてから扱う
-  //
-  // 簡略化のため: 別PDF/空白ページは追加時にすぐ元PDFへマージし
-  // 新しいPdfRenderer.pdfDoc をリビルドする方式を採用。
-  pageOrder: [],   // [realPageIndex(1-based), ...]
+  pageOrder: [],
+  selectedIndices: new Set(),  // 複数選択 (表示index 0-based)
+  lastClickedIndex: -1,        // Shift範囲選択用
   sortable: null,
 
-  /**
-   * 初期化: PDFをロードした直後に呼ぶ
-   */
   init() {
     const total = PdfRenderer.numPages();
     this.pageOrder = Array.from({ length: total }, (_, i) => i + 1);
+    this.selectedIndices = new Set();
     this.renderThumbnails();
   },
 
-  /**
-   * サムネイル全描画
-   */
   async renderThumbnails() {
     const listEl = document.getElementById('thumbnail-list');
+    if (!listEl) return;
     listEl.innerHTML = '';
 
     for (let i = 0; i < this.pageOrder.length; i++) {
@@ -38,12 +26,17 @@ const PageManager = {
       item.className = 'thumbnail-item';
       item.dataset.pageIndex = i;
       item.dataset.realIndex = realIdx;
+      item.tabIndex = 0; // フォーカス可能に
+
+      const checkbox = document.createElement('div');
+      checkbox.className = 'select-checkbox';
 
       const canvas = document.createElement('canvas');
       const label = document.createElement('div');
       label.className = 'page-num';
       label.textContent = `${i + 1} / ${this.pageOrder.length}`;
 
+      item.appendChild(checkbox);
       item.appendChild(canvas);
       item.appendChild(label);
       listEl.appendChild(item);
@@ -54,7 +47,6 @@ const PageManager = {
         console.error('Thumbnail error:', e);
       }
 
-      // コメントバッジ
       const cnt = Comments.countForPage(realIdx);
       if (cnt > 0) {
         const badge = document.createElement('div');
@@ -63,31 +55,95 @@ const PageManager = {
         item.appendChild(badge);
       }
 
-      item.addEventListener('click', (e) => {
-        if (e.target.closest('.sortable-drag')) return;
-        PdfRenderer.renderPage(i + 1);
-      });
+      // 選択状態反映
+      if (this.selectedIndices.has(i)) item.classList.add('multi-selected');
+
+      item.addEventListener('click', (e) => this.onThumbClick(e, i));
     }
 
-    // ソート可能化
     if (this.sortable) this.sortable.destroy();
     this.sortable = Sortable.create(listEl, {
       animation: 150,
       ghostClass: 'sortable-ghost',
       dragClass: 'sortable-drag',
       onEnd: (evt) => this.onReorder(evt),
+      // 複数選択中はそれらをまとめて移動
+      multiDrag: false,
     });
 
-    // ページカウント更新
     document.getElementById('page-count-info').textContent = `${this.pageOrder.length} ページ`;
-
-    // ボタン有効化
     this.updateUIState();
+    this.updateBulkUI();
   },
 
   /**
-   * 単一サムネイル更新 (回転後等)
+   * サムネクリック処理 (Ctrl/Shift対応)
    */
+  onThumbClick(e, displayIndex) {
+    const isCtrl = e.ctrlKey || e.metaKey;
+    const isShift = e.shiftKey;
+
+    if (isShift && this.lastClickedIndex >= 0) {
+      // 範囲選択
+      const from = Math.min(this.lastClickedIndex, displayIndex);
+      const to = Math.max(this.lastClickedIndex, displayIndex);
+      for (let i = from; i <= to; i++) this.selectedIndices.add(i);
+    } else if (isCtrl) {
+      // トグル
+      if (this.selectedIndices.has(displayIndex)) {
+        this.selectedIndices.delete(displayIndex);
+      } else {
+        this.selectedIndices.add(displayIndex);
+      }
+      this.lastClickedIndex = displayIndex;
+    } else {
+      // 通常クリック: 単一表示 + 選択クリア
+      this.selectedIndices.clear();
+      this.lastClickedIndex = displayIndex;
+      PdfRenderer.renderPage(displayIndex + 1);
+    }
+
+    this.refreshSelectionUI();
+    this.updateBulkUI();
+
+    // 単一表示は通常クリック以外の場合も該当ページへ
+    if (!isCtrl && !isShift) {
+      PdfRenderer.renderPage(displayIndex + 1);
+    }
+  },
+
+  refreshSelectionUI() {
+    document.querySelectorAll('.thumbnail-item').forEach((el, i) => {
+      el.classList.toggle('multi-selected', this.selectedIndices.has(i));
+    });
+  },
+
+  selectAll() {
+    this.selectedIndices = new Set(this.pageOrder.map((_, i) => i));
+    this.refreshSelectionUI();
+    this.updateBulkUI();
+    Utils.toast(`${this.pageOrder.length}ページを選択`, 'info', 1500);
+  },
+
+  deselectAll() {
+    this.selectedIndices.clear();
+    this.lastClickedIndex = -1;
+    this.refreshSelectionUI();
+    this.updateBulkUI();
+  },
+
+  updateBulkUI() {
+    const bulkEl = document.getElementById('bulk-actions');
+    const countEl = document.getElementById('selected-count');
+    if (!bulkEl) return;
+    if (this.selectedIndices.size >= 2) {
+      bulkEl.hidden = false;
+      countEl.textContent = this.selectedIndices.size;
+    } else {
+      bulkEl.hidden = true;
+    }
+  },
+
   async updateThumbnail(displayIndex) {
     const item = document.querySelector(`.thumbnail-item[data-page-index="${displayIndex}"]`);
     if (!item) return;
@@ -96,14 +152,10 @@ const PageManager = {
     await PdfRenderer.renderThumbnail(realIdx, canvas, 0.18);
   },
 
-  /**
-   * 全サムネイル再描画(軽量)
-   */
   async refreshAllThumbnails() {
     for (let i = 0; i < this.pageOrder.length; i++) {
       await this.updateThumbnail(i);
     }
-    // コメントバッジ更新
     document.querySelectorAll('.thumbnail-item').forEach((el, i) => {
       const old = el.querySelector('.badge-comment');
       if (old) old.remove();
@@ -118,97 +170,141 @@ const PageManager = {
     });
   },
 
-  /**
-   * D&Dで並び替えられた
-   */
   onReorder(evt) {
     const newOrder = [];
     document.querySelectorAll('#thumbnail-list .thumbnail-item').forEach(el => {
       newOrder.push(parseInt(el.dataset.realIndex, 10));
     });
     this.pageOrder = newOrder;
+    this.selectedIndices = new Set();  // 並び替え後はクリア
 
-    // ラベル番号を更新
     document.querySelectorAll('#thumbnail-list .thumbnail-item').forEach((el, i) => {
       el.dataset.pageIndex = i;
       el.querySelector('.page-num').textContent = `${i + 1} / ${this.pageOrder.length}`;
     });
 
-    // 現在表示中ページの新しい位置を計算
     const realIdx = PdfRenderer.getCurrentRealPageIndex();
     const newDisplayIndex = this.pageOrder.indexOf(realIdx);
     PdfRenderer.currentPage = (newDisplayIndex >= 0) ? (newDisplayIndex + 1) : 1;
     PdfRenderer.renderPage(PdfRenderer.currentPage);
     Comments.renderList();
+    this.refreshSelectionUI();
+    this.updateBulkUI();
 
-    Utils.toast('ページを並び替えました', 'success');
+    Utils.toast('ページを並び替えました', 'success', 1500);
+    History.record();
   },
 
   /**
-   * 現在表示中のページを削除
+   * 単一ページ削除 (現在表示)
    */
   deleteCurrentPage() {
     if (this.pageOrder.length <= 1) {
       Utils.toast('最後のページは削除できません', 'warn');
       return;
     }
-    if (!Utils.confirm('このページを削除しますか？(注釈・コメントも削除されます)')) return;
+    if (!Utils.confirm('このページを削除しますか？')) return;
+    this._deletePages([PdfRenderer.currentPage - 1]);
+  },
 
-    const idx = PdfRenderer.currentPage - 1;
-    const realIdx = this.pageOrder[idx];
+  /**
+   * 選択ページを一括削除
+   */
+  bulkDelete() {
+    if (this.selectedIndices.size === 0) return;
+    if (this.selectedIndices.size >= this.pageOrder.length) {
+      Utils.toast('全ページ削除はできません', 'warn');
+      return;
+    }
+    if (!Utils.confirm(`選択中の${this.selectedIndices.size}ページを削除しますか？`)) return;
+    this._deletePages([...this.selectedIndices]);
+  },
 
-    // 注釈・コメント削除
-    Annotations.clearForPage(realIdx);
-    Object.keys(Comments.items).forEach(k => {
-      if (Comments.items[k].pageIndex === realIdx) delete Comments.items[k];
+  _deletePages(displayIndices) {
+    // 降順で削除して index ずれを防ぐ
+    const sorted = [...displayIndices].sort((a, b) => b - a);
+    sorted.forEach(idx => {
+      const realIdx = this.pageOrder[idx];
+      Annotations.clearForPage(realIdx);
+      Object.keys(Comments.items).forEach(k => {
+        if (Comments.items[k].pageIndex === realIdx) delete Comments.items[k];
+      });
+      this.pageOrder.splice(idx, 1);
     });
 
-    this.pageOrder.splice(idx, 1);
+    this.selectedIndices.clear();
+    this.lastClickedIndex = -1;
 
-    // 次に表示するページ
-    let next = idx + 1;
-    if (next > this.pageOrder.length) next = this.pageOrder.length;
+    let next = Math.min(sorted[sorted.length - 1] + 1, this.pageOrder.length);
+    if (next < 1) next = 1;
 
     this.renderThumbnails();
     PdfRenderer.renderPage(next);
     Comments.renderList();
-    Utils.toast('ページを削除しました', 'success');
+    Utils.toast(`${sorted.length}ページを削除`, 'success');
+    History.record();
   },
 
   /**
-   * 空白ページを末尾に追加 (pdf-libでドキュメント再構築)
+   * 一括回転
    */
+  bulkRotate(direction = 'right') {
+    if (this.selectedIndices.size === 0) {
+      Utils.toast('ページを選択してください', 'warn');
+      return;
+    }
+    const delta = direction === 'right' ? 90 : -90;
+    this.selectedIndices.forEach(idx => {
+      const realIdx = this.pageOrder[idx];
+      const cur = PdfRenderer.pageRotations[realIdx] || 0;
+      PdfRenderer.pageRotations[realIdx] = ((cur + delta) % 360 + 360) % 360;
+      Annotations.clearForPage(realIdx);
+    });
+    this.refreshAllThumbnails();
+    PdfRenderer.renderPage(PdfRenderer.currentPage);
+    Utils.toast(`${this.selectedIndices.size}ページを回転`, 'success');
+    History.record();
+  },
+
+  /**
+   * 選択ページのみで新PDFを作成 (抽出エクスポート)
+   */
+  bulkExport() {
+    if (this.selectedIndices.size === 0) {
+      Utils.toast('ページを選択してください', 'warn');
+      return;
+    }
+    const sortedDisplayIdx = [...this.selectedIndices].sort((a, b) => a - b);
+    Exporter.exportPdf({ pageDisplayIndices: sortedDisplayIdx });
+  },
+
   async addBlankPage() {
     if (!PdfRenderer.pdfDoc) return;
     Utils.setStatus('空白ページを追加中...');
     try {
-      // 現在のドキュメントをpdf-libで開く
-      const pdfBytes = await Exporter.serializeCurrentDoc(); // 元データのみ(注釈無し)
-      const pdfDoc = await PDFLib.PDFDocument.load(pdfBytes);
-      pdfDoc.addPage(); // A4ぐらいのデフォルトサイズ
+      const pdfBytes = await Exporter.serializeCurrentDoc();
+      const pdfDoc = await PDFLib.PDFDocument.load(pdfBytes, { ignoreEncryption: true });
+      pdfDoc.addPage();
       const newBytes = await pdfDoc.save();
-      await this.reloadFromBytes(newBytes, /*appendOrderForNewPage*/ true);
+      await this.reloadFromBytes(newBytes, true);
       Utils.toast('空白ページを追加しました', 'success');
+      History.record();
     } catch (e) {
       console.error(e);
-      Utils.toast('空白ページの追加に失敗しました', 'error');
+      Utils.toast('空白ページの追加に失敗', 'error');
     } finally {
       Utils.setStatus('準備完了');
     }
   },
 
-  /**
-   * 別PDFを結合 (末尾に追加)
-   */
   async mergePdf(file) {
     if (!PdfRenderer.pdfDoc) return;
     Utils.setStatus('PDFを結合中...');
     try {
       const targetBytes = await Exporter.serializeCurrentDoc();
       const sourceBytes = await Utils.readFileAsArrayBuffer(file);
-
-      const targetDoc = await PDFLib.PDFDocument.load(targetBytes);
-      const sourceDoc = await PDFLib.PDFDocument.load(sourceBytes);
+      const targetDoc = await PDFLib.PDFDocument.load(targetBytes, { ignoreEncryption: true });
+      const sourceDoc = await PDFLib.PDFDocument.load(sourceBytes, { ignoreEncryption: true });
 
       const indices = sourceDoc.getPageIndices();
       const copied = await targetDoc.copyPages(sourceDoc, indices);
@@ -216,23 +312,17 @@ const PageManager = {
 
       const newBytes = await targetDoc.save();
       await this.reloadFromBytes(newBytes, true, indices.length);
-      Utils.toast(`${indices.length}ページを結合しました`, 'success');
+      Utils.toast(`${indices.length}ページを結合`, 'success');
+      History.record();
     } catch (e) {
       console.error(e);
-      Utils.toast('PDF結合に失敗しました', 'error');
+      Utils.toast('PDF結合に失敗', 'error');
     } finally {
       Utils.setStatus('準備完了');
     }
   },
 
-  /**
-   * 新しいバイト列で再ロード (注釈・コメントを保持)
-   * @param appendNewPages 末尾に追加された場合は新ページを順序末尾に
-   * @param newPagesCount 追加されたページ数 (デフォルト1)
-   */
   async reloadFromBytes(bytes, appendNewPages = false, newPagesCount = 1) {
-    // 旧 pageOrder/realIdx は元PDFのページ番号を指していた
-    // 新ドキュメントでも頭の N ページは同じ並び+末尾追加 が保証されている
     const oldOrder = [...this.pageOrder];
     const oldAnnotations = { ...Annotations.perPage };
     const oldRotations = { ...PdfRenderer.pageRotations };
@@ -241,15 +331,10 @@ const PageManager = {
 
     await PdfRenderer.loadFromArrayBuffer(bytes);
 
-    // 新トータル
-    const newTotal = PdfRenderer.numPages();
-
-    // 注釈・回転はrealIdxベース → ページ位置が変わらない前提なのでそのまま戻せる
     Annotations.perPage = oldAnnotations;
     PdfRenderer.pageRotations = oldRotations;
     Comments.items = oldComments;
 
-    // pageOrder 再構築: 元の順序 + 追加分は末尾
     const newPageOrder = oldOrder.slice();
     if (appendNewPages) {
       for (let i = 0; i < newPagesCount; i++) {
@@ -263,17 +348,13 @@ const PageManager = {
     Comments.renderList();
   },
 
-  /**
-   * UI状態更新
-   */
   updateUIState() {
     const hasDoc = !!PdfRenderer.pdfDoc;
-    document.getElementById('btn-add-blank').disabled = !hasDoc;
-    document.getElementById('btn-merge').disabled = !hasDoc;
-    document.getElementById('btn-download').disabled = !hasDoc;
-    document.getElementById('btn-rotate-left').disabled = !hasDoc;
-    document.getElementById('btn-rotate-right').disabled = !hasDoc;
-    document.getElementById('btn-delete-page').disabled = !hasDoc;
-    document.getElementById('btn-add-comment').disabled = !hasDoc;
+    ['btn-add-blank','btn-merge','btn-download','btn-rotate-left','btn-rotate-right',
+     'btn-delete-page','btn-forms','btn-ocr','btn-signature','btn-compare',
+     'btn-ocr-run','btn-ocr-all'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.disabled = !hasDoc;
+    });
   }
 };

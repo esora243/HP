@@ -7,7 +7,7 @@ const Annotations = {
   currentTool: 'select',
   color: '#ff3b30',
   strokeWidth: 3,
-  perPage: {},   // {realPageIndex: serializedFabricJSON}
+  perPage: {},
   isDrawingShape: false,
   startX: 0,
   startY: 0,
@@ -18,15 +18,26 @@ const Annotations = {
       selection: true,
       preserveObjectStacking: true,
     });
-    // 透過背景
     this.fabricCanvas.backgroundColor = null;
 
     this.fabricCanvas.on('mouse:down', (opt) => this.onMouseDown(opt));
     this.fabricCanvas.on('mouse:move', (opt) => this.onMouseMove(opt));
     this.fabricCanvas.on('mouse:up', (opt) => this.onMouseUp(opt));
-    this.fabricCanvas.on('object:modified', () => this.persist());
-    this.fabricCanvas.on('object:added', () => this.persist());
-    this.fabricCanvas.on('object:removed', () => this.persist());
+
+    this.fabricCanvas.on('object:modified', () => {
+      this.persist();
+      History.record();
+    });
+    this.fabricCanvas.on('object:added', () => {
+      if (Annotations._loadingFromJson) return;
+      this.persist();
+      History.record();
+    });
+    this.fabricCanvas.on('object:removed', () => {
+      if (Annotations._loadingFromJson) return;
+      this.persist();
+      History.record();
+    });
   },
 
   resizeCanvas(width, height) {
@@ -43,7 +54,6 @@ const Annotations = {
     const canvas = this.fabricCanvas;
     if (!canvas) return;
 
-    // フリーハンド
     if (tool === 'draw') {
       canvas.isDrawingMode = true;
       canvas.freeDrawingBrush.color = this.color;
@@ -52,29 +62,23 @@ const Annotations = {
       canvas.isDrawingMode = false;
     }
 
-    // 選択モードON/OFF
+    if (tool === 'stamp-sig') {
+      // 署名スタンプはクリック1回で配置
+      canvas.isDrawingMode = false;
+    }
+
     canvas.selection = (tool === 'select');
     canvas.forEachObject(o => {
       o.selectable = (tool === 'select');
       o.evented = (tool === 'select');
     });
 
-    // カーソル
     const cursorMap = {
       select: 'default',
       text: 'text',
-      highlight: 'crosshair',
-      rect: 'crosshair',
-      circle: 'crosshair',
-      arrow: 'crosshair',
-      draw: 'crosshair',
-      note: 'crosshair',
     };
-    canvas.defaultCursor = cursorMap[tool] || 'default';
-    document.getElementById('annotation-canvas').style.pointerEvents =
-      (tool === 'select') ? 'auto' : 'auto';
+    canvas.defaultCursor = cursorMap[tool] || 'crosshair';
 
-    // ツールバーUI
     document.querySelectorAll('.tool-btn').forEach(b => {
       b.classList.toggle('active', b.dataset.tool === tool);
     });
@@ -85,17 +89,15 @@ const Annotations = {
     if (this.fabricCanvas?.isDrawingMode) {
       this.fabricCanvas.freeDrawingBrush.color = hex;
     }
-    // 選択中オブジェクトに反映
-    const active = this.fabricCanvas?.getActiveObject();
-    if (active) {
-      if (active.type === 'i-text' || active.type === 'text') {
-        active.set('fill', hex);
-      } else {
-        active.set('stroke', hex);
-        if (active.type === 'rect' && active.fill !== 'transparent' && active.opacity < 1) {
-          active.set('fill', hex);
+    const active = this.fabricCanvas?.getActiveObjects();
+    if (active && active.length) {
+      active.forEach(obj => {
+        if (obj.type === 'i-text' || obj.type === 'text') {
+          obj.set('fill', hex);
+        } else {
+          obj.set('stroke', hex);
         }
-      }
+      });
       this.fabricCanvas.renderAll();
       this.persist();
     }
@@ -106,9 +108,11 @@ const Annotations = {
     if (this.fabricCanvas?.isDrawingMode) {
       this.fabricCanvas.freeDrawingBrush.width = w;
     }
-    const active = this.fabricCanvas?.getActiveObject();
-    if (active && active.set) {
-      active.set('strokeWidth', w);
+    const active = this.fabricCanvas?.getActiveObjects();
+    if (active && active.length) {
+      active.forEach(obj => {
+        if (obj.set) obj.set('strokeWidth', w);
+      });
       this.fabricCanvas.renderAll();
       this.persist();
     }
@@ -143,49 +147,42 @@ const Annotations = {
       return;
     }
 
+    if (tool === 'stamp-sig' && Signature.currentImageDataUrl) {
+      const url = Signature.currentImageDataUrl;
+      fabric.Image.fromURL(url, (img) => {
+        const canvasW = this.fabricCanvas.getWidth();
+        const maxW = canvasW * 0.25;
+        if (img.width > maxW) img.scaleToWidth(maxW);
+        img.set({ left: pointer.x, top: pointer.y, annotType: 'signature' });
+        this.fabricCanvas.add(img);
+        this.fabricCanvas.setActiveObject(img);
+        this.fabricCanvas.renderAll();
+      });
+      this.setTool('select');
+      return;
+    }
+
     this.isDrawingShape = true;
 
     if (tool === 'highlight') {
       this.tempShape = new fabric.Rect({
-        left: pointer.x,
-        top: pointer.y,
-        width: 0,
-        height: 0,
-        fill: this.color,
-        opacity: 0.35,
-        stroke: null,
-        selectable: false,
+        left: pointer.x, top: pointer.y, width: 0, height: 0,
+        fill: this.color, opacity: 0.35, stroke: null, selectable: false,
       });
     } else if (tool === 'rect') {
       this.tempShape = new fabric.Rect({
-        left: pointer.x,
-        top: pointer.y,
-        width: 0,
-        height: 0,
-        fill: 'transparent',
-        stroke: this.color,
-        strokeWidth: this.strokeWidth,
-        selectable: false,
+        left: pointer.x, top: pointer.y, width: 0, height: 0,
+        fill: 'transparent', stroke: this.color, strokeWidth: this.strokeWidth, selectable: false,
       });
     } else if (tool === 'circle') {
       this.tempShape = new fabric.Ellipse({
-        left: pointer.x,
-        top: pointer.y,
-        rx: 0,
-        ry: 0,
-        fill: 'transparent',
-        stroke: this.color,
-        strokeWidth: this.strokeWidth,
-        selectable: false,
+        left: pointer.x, top: pointer.y, rx: 0, ry: 0,
+        fill: 'transparent', stroke: this.color, strokeWidth: this.strokeWidth, selectable: false,
       });
     } else if (tool === 'arrow') {
       this.tempShape = new fabric.Line(
         [pointer.x, pointer.y, pointer.x, pointer.y],
-        {
-          stroke: this.color,
-          strokeWidth: this.strokeWidth,
-          selectable: false,
-        }
+        { stroke: this.color, strokeWidth: this.strokeWidth, selectable: false }
       );
     }
     if (this.tempShape) this.fabricCanvas.add(this.tempShape);
@@ -200,8 +197,7 @@ const Annotations = {
       const w = pointer.x - this.startX;
       const h = pointer.y - this.startY;
       this.tempShape.set({
-        width: Math.abs(w),
-        height: Math.abs(h),
+        width: Math.abs(w), height: Math.abs(h),
         left: w < 0 ? pointer.x : this.startX,
         top: h < 0 ? pointer.y : this.startY,
       });
@@ -209,8 +205,7 @@ const Annotations = {
       const w = Math.abs(pointer.x - this.startX);
       const h = Math.abs(pointer.y - this.startY);
       this.tempShape.set({
-        rx: w / 2,
-        ry: h / 2,
+        rx: w / 2, ry: h / 2,
         left: Math.min(this.startX, pointer.x),
         top: Math.min(this.startY, pointer.y),
       });
@@ -225,7 +220,6 @@ const Annotations = {
     this.isDrawingShape = false;
 
     if (this.tempShape) {
-      // 矢印は2要素(線+三角)に変換
       if (this.currentTool === 'arrow') {
         this.convertLineToArrow(this.tempShape);
       } else {
@@ -244,28 +238,18 @@ const Annotations = {
     const headSize = Math.max(10, this.strokeWidth * 3);
 
     const triangle = new fabric.Triangle({
-      left: x2,
-      top: y2,
-      originX: 'center',
-      originY: 'center',
-      width: headSize,
-      height: headSize,
+      left: x2, top: y2,
+      originX: 'center', originY: 'center',
+      width: headSize, height: headSize,
       fill: this.color,
       angle: (angle * 180 / Math.PI) + 90,
       selectable: false,
     });
 
     const group = new fabric.Group([
-      new fabric.Line([x1, y1, x2, y2], {
-        stroke: this.color,
-        strokeWidth: this.strokeWidth,
-      }),
+      new fabric.Line([x1, y1, x2, y2], { stroke: this.color, strokeWidth: this.strokeWidth }),
       triangle
-    ], {
-      selectable: true,
-      evented: true,
-      annotType: 'arrow',
-    });
+    ], { selectable: true, evented: true, annotType: 'arrow' });
 
     this.fabricCanvas.remove(line);
     this.fabricCanvas.add(group);
@@ -277,18 +261,29 @@ const Annotations = {
       active.forEach(o => this.fabricCanvas.remove(o));
       this.fabricCanvas.discardActiveObject();
       this.fabricCanvas.renderAll();
+      Utils.toast(`${active.length}個の注釈を削除`, 'success', 1500);
     }
   },
 
-  /**
-   * 現在ページの注釈を保存
-   */
+  selectAll() {
+    if (!this.fabricCanvas) return;
+    const objs = this.fabricCanvas.getObjects();
+    if (objs.length === 0) {
+      Utils.toast('注釈がありません', 'info');
+      return;
+    }
+    this.setTool('select');
+    const sel = new fabric.ActiveSelection(objs, { canvas: this.fabricCanvas });
+    this.fabricCanvas.setActiveObject(sel);
+    this.fabricCanvas.renderAll();
+    Utils.toast(`${objs.length}個の注釈を選択`, 'info', 1500);
+  },
+
   persist() {
     if (!PdfRenderer.pdfDoc) return;
     const realIdx = PdfRenderer.getCurrentRealPageIndex();
     if (!realIdx) return;
-    const json = this.fabricCanvas.toJSON();
-    // 注釈が無ければエントリ削除
+    const json = this.fabricCanvas.toJSON(['annotType']);
     if (!json.objects || json.objects.length === 0) {
       delete this.perPage[realIdx];
     } else {
@@ -298,23 +293,23 @@ const Annotations = {
         canvasH: this.fabricCanvas.getHeight(),
       };
     }
+    Storage.scheduleSave();
   },
 
-  /**
-   * 指定ページの注釈をロード
-   */
+  _loadingFromJson: false,
   loadForPage(realPageIndex) {
     if (!this.fabricCanvas) this.init();
+    this._loadingFromJson = true;
     this.fabricCanvas.clear();
     const saved = this.perPage[realPageIndex];
     if (!saved) {
       this.fabricCanvas.renderAll();
+      this._loadingFromJson = false;
       return;
     }
     const targetW = this.fabricCanvas.getWidth();
     const targetH = this.fabricCanvas.getHeight();
     this.fabricCanvas.loadFromJSON(saved.json, () => {
-      // ズーム等で表示サイズが変わった場合のスケール補正
       const sx = targetW / saved.canvasW;
       const sy = targetH / saved.canvasH;
       this.fabricCanvas.forEachObject(o => {
@@ -325,9 +320,9 @@ const Annotations = {
         o.setCoords();
       });
       this.fabricCanvas.renderAll();
-      // 保存サイズを更新
       saved.canvasW = targetW;
       saved.canvasH = targetH;
+      this._loadingFromJson = false;
     });
   },
 
@@ -335,10 +330,6 @@ const Annotations = {
     delete this.perPage[realPageIndex];
   },
 
-  /**
-   * 全注釈データ取得 (エクスポート用)
-   * 各注釈の絶対座標を canvas基準サイズで返す
-   */
   getAllAnnotations() {
     return this.perPage;
   }

@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>PDF Editor - ブラウザで動くPDF編集ツール</title>
+<title>PDF Editor Pro v2.0</title>
 <link rel="stylesheet" href="css/style.css" />
 
 <!-- 外部ライブラリ (CDN) -->
@@ -11,6 +11,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.0/fabric.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5.0.4/dist/tesseract.min.js"></script>
 </head>
 <body>
 
@@ -19,35 +20,61 @@
   <div class="brand">
     <span class="logo">📄</span>
     <h1>PDF Editor</h1>
-    <span class="version">v1.0</span>
+    <span class="version">Pro v2.0</span>
   </div>
   <div class="header-actions">
-    <button id="btn-open" class="btn btn-primary">
-      <span>📂</span> PDFを開く
-    </button>
-    <button id="btn-add-blank" class="btn" disabled>
-      <span>＋</span> 空白ページ追加
-    </button>
-    <button id="btn-merge" class="btn" disabled>
-      <span>🔗</span> 別PDFを結合
-    </button>
-    <button id="btn-download" class="btn btn-success" disabled>
-      <span>💾</span> ダウンロード
-    </button>
+    <button id="btn-open" class="btn btn-primary"><span>📂</span> 開く</button>
+    <button id="btn-add-blank" class="btn" disabled><span>＋</span> 空白追加</button>
+    <button id="btn-merge" class="btn" disabled><span>🔗</span> 結合</button>
+
+    <div class="btn-divider"></div>
+
+    <button id="btn-undo" class="btn btn-icon" disabled title="元に戻す (Ctrl+Z)">↶</button>
+    <button id="btn-redo" class="btn btn-icon" disabled title="やり直す (Ctrl+Y)">↷</button>
+
+    <div class="btn-divider"></div>
+
+    <button id="btn-forms" class="btn" disabled title="PDFフォーム入力"><span>📋</span> フォーム</button>
+    <button id="btn-ocr" class="btn" disabled title="OCRテキスト抽出"><span>🔍</span> OCR</button>
+    <button id="btn-signature" class="btn" disabled title="電子署名"><span>✍️</span> 署名</button>
+    <button id="btn-compare" class="btn" disabled title="比較ビュー"><span>⇆</span> 比較</button>
+
+    <div class="btn-divider"></div>
+
+    <button id="btn-download" class="btn btn-success" disabled><span>💾</span> ダウンロード</button>
     <button id="btn-help" class="btn btn-ghost" title="ヘルプ">？</button>
+    <button id="btn-clear-storage" class="btn btn-ghost" title="自動保存データを消去">🗑️</button>
   </div>
   <input type="file" id="file-input" accept="application/pdf" hidden />
   <input type="file" id="file-input-merge" accept="application/pdf" hidden />
+  <input type="file" id="file-input-signature" accept="image/*" hidden />
 </header>
 
+<!-- 自動保存インジケータ -->
+<div id="autosave-indicator" class="autosave-indicator" hidden>
+  <span class="dot"></span><span class="text">自動保存済み</span>
+</div>
+
 <!-- ========== メインレイアウト ========== -->
-<main class="app-main">
+<main class="app-main" id="app-main">
 
   <!-- 左サイドバー: ページサムネイル -->
   <aside class="sidebar">
     <div class="sidebar-header">
       <h2>📑 ページ一覧</h2>
-      <small class="hint">ドラッグで並び替え</small>
+      <div class="header-controls">
+        <button id="btn-select-all" class="btn-mini" title="すべて選択 (Ctrl+A)">全選択</button>
+        <button id="btn-deselect" class="btn-mini" title="選択解除">解除</button>
+      </div>
+    </div>
+    <div id="bulk-actions" class="bulk-actions" hidden>
+      <span id="selected-count">0</span> ページ選択中
+      <div class="bulk-buttons">
+        <button id="btn-bulk-rotate-left" class="btn-mini" title="一括左回転">↺</button>
+        <button id="btn-bulk-rotate-right" class="btn-mini" title="一括右回転">↻</button>
+        <button id="btn-bulk-delete" class="btn-mini btn-danger-mini" title="一括削除 (Delete)">🗑️ 削除</button>
+        <button id="btn-bulk-export" class="btn-mini" title="選択ページのみ書き出し">📤 抽出</button>
+      </div>
     </div>
     <div id="thumbnail-list" class="thumbnail-list">
       <div class="empty-state">
@@ -60,9 +87,8 @@
     </div>
   </aside>
 
-  <!-- 中央: PDFビューア + 注釈キャンバス -->
+  <!-- 中央: PDFビューア -->
   <section class="viewer-section">
-    <!-- ツールバー -->
     <div class="toolbar">
       <div class="toolbar-group">
         <button class="tool-btn active" data-tool="select" title="選択">🖱️</button>
@@ -73,6 +99,7 @@
         <button class="tool-btn" data-tool="arrow" title="矢印">➤</button>
         <button class="tool-btn" data-tool="draw" title="フリーハンド">✏️</button>
         <button class="tool-btn" data-tool="note" title="付箋コメント">📌</button>
+        <button class="tool-btn" data-tool="stamp-sig" title="署名スタンプ" disabled>✍️</button>
       </div>
 
       <div class="toolbar-divider"></div>
@@ -88,10 +115,11 @@
       <div class="toolbar-divider"></div>
 
       <div class="toolbar-group">
-        <button id="btn-delete-annot" class="btn btn-sm">🗑️ 注釈削除</button>
-        <button id="btn-rotate-left" class="btn btn-sm" disabled>↺ 左回転</button>
-        <button id="btn-rotate-right" class="btn btn-sm" disabled>↻ 右回転</button>
-        <button id="btn-delete-page" class="btn btn-sm btn-danger" disabled>✖ ページ削除</button>
+        <button id="btn-select-all-annot" class="btn btn-sm" title="注釈全選択">全選択</button>
+        <button id="btn-delete-annot" class="btn btn-sm" title="選択注釈削除 (Delete)">🗑️ 注釈</button>
+        <button id="btn-rotate-left" class="btn btn-sm" disabled>↺</button>
+        <button id="btn-rotate-right" class="btn btn-sm" disabled>↻</button>
+        <button id="btn-delete-page" class="btn btn-sm btn-danger" disabled>✖ ページ</button>
       </div>
 
       <div class="toolbar-divider"></div>
@@ -100,50 +128,98 @@
         <button id="btn-zoom-out" class="btn btn-sm">−</button>
         <span id="zoom-level">100%</span>
         <button id="btn-zoom-in" class="btn btn-sm">＋</button>
-        <button id="btn-zoom-fit" class="btn btn-sm">⤢ 自動</button>
+        <button id="btn-zoom-fit" class="btn btn-sm">⤢</button>
       </div>
     </div>
 
-    <!-- ビューア -->
     <div id="viewer-wrapper" class="viewer-wrapper">
       <div id="viewer-empty" class="viewer-empty">
         <div class="welcome-box">
-          <h2>📄 PDF Editorへようこそ</h2>
-          <p>左上の「PDFを開く」ボタン、またはここにファイルをドラッグ＆ドロップしてください。</p>
-          <ul class="feature-list">
-            <li>✅ ページの追加・削除・並び替え・回転</li>
-            <li>✅ テキスト・図形・ハイライト・フリーハンド注釈</li>
-            <li>✅ 付箋コメント機能</li>
-            <li>✅ 複数PDFの結合</li>
-            <li>✅ 編集済みPDFのダウンロード</li>
-            <li>🔒 すべての処理がブラウザ内で完結（プライバシー安全）</li>
-          </ul>
+          <h2>📄 PDF Editor Pro v2.0</h2>
+          <p>PDFを開く、またはここにドラッグ＆ドロップしてください。</p>
+          <div class="feature-grid">
+            <div class="feat">🗂️ 一括編集/削除</div>
+            <div class="feat">💾 自動保存</div>
+            <div class="feat">↶↷ Undo/Redo</div>
+            <div class="feat">📋 フォーム入力</div>
+            <div class="feat">🔍 OCR</div>
+            <div class="feat">✍️ 電子署名</div>
+            <div class="feat">⇆ 比較ビュー</div>
+            <div class="feat">🔒 完全ローカル</div>
+          </div>
           <button class="btn btn-primary btn-large" onclick="document.getElementById('file-input').click()">PDFを選択</button>
+          <p class="restore-hint" id="restore-hint" hidden>
+            💾 前回の編集データが残っています。同じPDFを開くと復元されます。
+          </p>
         </div>
       </div>
       <div id="viewer-canvas-wrapper" class="canvas-wrapper" style="display:none">
         <canvas id="pdf-canvas"></canvas>
         <canvas id="annotation-canvas"></canvas>
+        <div id="form-overlay" class="form-overlay"></div>
+      </div>
+      <div id="viewer-canvas-wrapper-2" class="canvas-wrapper compare-second" style="display:none">
+        <canvas id="pdf-canvas-2"></canvas>
       </div>
     </div>
 
-    <!-- ステータスバー -->
     <div class="status-bar">
       <span id="status-page">ページ - / -</span>
       <span id="status-message">準備完了</span>
+      <span id="status-storage"></span>
     </div>
   </section>
 
-  <!-- 右サイドバー: コメント一覧 -->
+  <!-- 右サイドバー -->
   <aside class="comments-panel">
-    <div class="sidebar-header">
-      <h2>💬 コメント</h2>
-      <button id="btn-add-comment" class="btn btn-sm" disabled>＋</button>
+    <div class="tabs">
+      <button class="tab-btn active" data-tab="comments">💬 コメント</button>
+      <button class="tab-btn" data-tab="forms">📋 フォーム</button>
+      <button class="tab-btn" data-tab="ocr">🔍 OCR</button>
     </div>
-    <div id="comment-list" class="comment-list">
-      <div class="empty-state">
-        <p>コメントはまだありません</p>
-        <small>付箋ツール（📌）でページにコメントを追加できます</small>
+    <div class="tab-content" id="tab-comments">
+      <div id="comment-list" class="comment-list">
+        <div class="empty-state">
+          <p>💬</p>
+          <p>コメントはまだありません</p>
+          <small>📌ツールで付箋を追加</small>
+        </div>
+      </div>
+    </div>
+    <div class="tab-content" id="tab-forms" hidden>
+      <div id="forms-panel" class="forms-panel">
+        <div class="empty-state">
+          <p>📋</p>
+          <p>フォームフィールドなし</p>
+          <small>PDFを読み込み後、フォームボタンで検出</small>
+        </div>
+      </div>
+    </div>
+    <div class="tab-content" id="tab-ocr" hidden>
+      <div id="ocr-panel" class="ocr-panel">
+        <div class="ocr-controls">
+          <select id="ocr-lang">
+            <option value="jpn+eng">日本語+英語</option>
+            <option value="eng">英語のみ</option>
+            <option value="jpn">日本語のみ</option>
+            <option value="chi_sim">簡体中文</option>
+            <option value="chi_tra">繁體中文</option>
+            <option value="kor">한국어</option>
+          </select>
+          <button id="btn-ocr-run" class="btn btn-sm btn-primary" disabled>現ページ実行</button>
+          <button id="btn-ocr-all" class="btn btn-sm" disabled>全ページ実行</button>
+        </div>
+        <div id="ocr-progress" class="ocr-progress" hidden>
+          <div class="ocr-progress-bar"><div id="ocr-progress-fill"></div></div>
+          <small id="ocr-progress-text">準備中...</small>
+        </div>
+        <div id="ocr-result" class="ocr-result">
+          <div class="empty-state">
+            <p>🔍</p>
+            <p>OCR未実行</p>
+            <small>画像PDFをテキスト化</small>
+          </div>
+        </div>
       </div>
     </div>
   </aside>
@@ -160,31 +236,40 @@
     <div class="modal-body">
       <h3>基本操作</h3>
       <ul>
-        <li><strong>PDFを開く</strong>: ヘッダーの「PDFを開く」またはドラッグ＆ドロップ</li>
-        <li><strong>ページ並び替え</strong>: 左サイドバーのサムネイルをドラッグ</li>
-        <li><strong>ページ削除</strong>: サムネイル選択 → ツールバー「ページ削除」</li>
-        <li><strong>ページ回転</strong>: ツールバーの ↺ ↻</li>
-        <li><strong>空白ページ追加</strong>: ヘッダー「＋ 空白ページ追加」</li>
-        <li><strong>別PDF結合</strong>: ヘッダー「🔗 別PDFを結合」</li>
+        <li><strong>PDFを開く</strong>: ヘッダー「開く」または D&D</li>
+        <li><strong>ページ並び替え</strong>: サムネをドラッグ</li>
+        <li><strong>複数選択</strong>: Ctrl/⌘+クリック または Shift+クリック（範囲）</li>
+        <li><strong>全選択</strong>: Ctrl+A（サムネにフォーカス時）</li>
+        <li><strong>一括削除</strong>: 複数選択 → Delete または「🗑️ 削除」</li>
+        <li><strong>一括回転</strong>: 複数選択 → ↺ / ↻</li>
+        <li><strong>選択ページ抽出</strong>: 選択ページのみで新PDF生成</li>
       </ul>
       <h3>注釈ツール</h3>
       <ul>
-        <li><strong>T</strong> テキスト: クリックで文字入力</li>
-        <li><strong>🖍️</strong> ハイライト: ドラッグで蛍光マーカー</li>
-        <li><strong>▭ ◯</strong> 図形: ドラッグで矩形・円</li>
-        <li><strong>➤</strong> 矢印: ドラッグで矢印</li>
-        <li><strong>✏️</strong> フリーハンド: ドラッグで自由描画</li>
-        <li><strong>📌</strong> 付箋: クリックでコメント追加</li>
+        <li><strong>T</strong> テキスト、<strong>🖍️</strong> ハイライト、<strong>▭ ◯ ➤</strong> 図形、<strong>✏️</strong> フリーハンド、<strong>📌</strong> 付箋</li>
+        <li><strong>注釈の一括選択</strong>: ツールバー「全選択」</li>
+        <li><strong>Delete</strong>: 選択中の注釈を削除</li>
       </ul>
-      <h3>保存</h3>
-      <p>「💾 ダウンロード」で注釈・編集を反映したPDFを保存します。</p>
-      <h3>プライバシー</h3>
-      <p>すべての処理がブラウザ内で完結します。ファイルはサーバーに送信されません。</p>
+      <h3>高度な機能</h3>
+      <ul>
+        <li><strong>↶ ↷</strong> アンドゥ/リドゥ (Ctrl+Z / Ctrl+Y)</li>
+        <li><strong>📋 フォーム</strong> 既存PDFフォームを検出して入力</li>
+        <li><strong>🔍 OCR</strong> 画像PDFからテキスト抽出 (日英中韓対応)</li>
+        <li><strong>✍️ 署名</strong> 手書き署名または画像で署名スタンプ</li>
+        <li><strong>⇆ 比較</strong> 別PDFを並べて表示</li>
+        <li><strong>💾 自動保存</strong> 編集状態を localStorage に保存（同じPDFを開くと復元）</li>
+      </ul>
+      <h3>キーボードショートカット</h3>
+      <ul>
+        <li><kbd>←</kbd>/<kbd>→</kbd> 前後ページ / <kbd>Ctrl+Z</kbd> Undo / <kbd>Ctrl+Y</kbd> Redo</li>
+        <li><kbd>Ctrl+A</kbd> 全選択 / <kbd>Ctrl+S</kbd> 保存 / <kbd>Delete</kbd> 削除</li>
+        <li><kbd>+</kbd>/<kbd>-</kbd> ズーム / <kbd>Esc</kbd> モーダル閉じる</li>
+      </ul>
     </div>
   </div>
 </div>
 
-<!-- ========== モーダル: 付箋コメント編集 ========== -->
+<!-- ========== モーダル: 付箋コメント ========== -->
 <div id="note-modal" class="modal" hidden>
   <div class="modal-content modal-sm">
     <div class="modal-header">
@@ -204,6 +289,72 @@
   </div>
 </div>
 
+<!-- ========== モーダル: 署名 ========== -->
+<div id="signature-modal" class="modal" hidden>
+  <div class="modal-content">
+    <div class="modal-header">
+      <h2>✍️ 電子署名の作成</h2>
+      <button class="modal-close" onclick="document.getElementById('signature-modal').hidden=true">✖</button>
+    </div>
+    <div class="modal-body">
+      <div class="signature-tabs">
+        <button class="sig-tab-btn active" data-sig-tab="draw">手書き</button>
+        <button class="sig-tab-btn" data-sig-tab="type">タイプ入力</button>
+        <button class="sig-tab-btn" data-sig-tab="upload">画像アップロード</button>
+      </div>
+      <div class="sig-tab-content" id="sig-tab-draw">
+        <p class="hint">下の枠内にマウス/タッチで署名してください</p>
+        <canvas id="signature-canvas" width="600" height="200"></canvas>
+        <div class="sig-controls">
+          <label>色:</label>
+          <input type="color" id="sig-color" value="#0a0a0a" />
+          <label>太さ:</label>
+          <input type="range" id="sig-stroke" min="1" max="10" value="3" />
+          <button class="btn btn-sm" id="btn-sig-clear">クリア</button>
+        </div>
+      </div>
+      <div class="sig-tab-content" id="sig-tab-type" hidden>
+        <p class="hint">名前を入力し、フォントを選択</p>
+        <input type="text" id="sig-text-input" placeholder="例: 山田 太郎" style="font-size:24px;padding:10px;width:100%;" />
+        <div class="sig-font-list">
+          <button class="sig-font-option" data-font="cursive" style="font-family:cursive;font-size:32px;">Sample</button>
+          <button class="sig-font-option" data-font="'Brush Script MT', cursive" style="font-family:'Brush Script MT', cursive;font-size:36px;">Sample</button>
+          <button class="sig-font-option" data-font="'Comic Sans MS', cursive" style="font-family:'Comic Sans MS', cursive;font-size:28px;">Sample</button>
+          <button class="sig-font-option" data-font="serif" style="font-family:serif;font-size:28px;font-style:italic;">Sample</button>
+        </div>
+      </div>
+      <div class="sig-tab-content" id="sig-tab-upload" hidden>
+        <p class="hint">PNG/JPGの署名画像をアップロード（背景透過PNG推奨）</p>
+        <button class="btn btn-primary" onclick="document.getElementById('file-input-signature').click()">画像を選択</button>
+        <div id="sig-preview-area"></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="document.getElementById('signature-modal').hidden=true">キャンセル</button>
+      <button class="btn btn-primary" id="btn-sig-apply">署名を確定</button>
+    </div>
+  </div>
+</div>
+
+<!-- ========== モーダル: 比較ビュー ========== -->
+<div id="compare-modal" class="modal" hidden>
+  <div class="modal-content modal-sm">
+    <div class="modal-header">
+      <h2>⇆ 比較ビュー</h2>
+      <button class="modal-close" onclick="document.getElementById('compare-modal').hidden=true">✖</button>
+    </div>
+    <div class="modal-body">
+      <p>比較対象のPDFを選択してください</p>
+      <button class="btn btn-primary" id="btn-compare-select">比較するPDFを開く</button>
+      <input type="file" id="file-input-compare" accept="application/pdf" hidden />
+      <p class="hint" style="margin-top:12px;font-size:12px;color:#6b7280;">
+        現在開いているPDFと並べて表示します。<br>
+        比較表示中は編集機能が制限されます。
+      </p>
+    </div>
+  </div>
+</div>
+
 <!-- ドロップオーバーレイ -->
 <div id="drop-overlay" class="drop-overlay" hidden>
   <div class="drop-message">📥 ここにドロップしてPDFを開く</div>
@@ -214,10 +365,16 @@
 
 <!-- スクリプト -->
 <script src="js/utils.js"></script>
+<script src="js/history.js"></script>
+<script src="js/storage.js"></script>
 <script src="js/pdf-renderer.js"></script>
 <script src="js/annotations.js"></script>
 <script src="js/comments.js"></script>
 <script src="js/page-manager.js"></script>
+<script src="js/forms.js"></script>
+<script src="js/ocr.js"></script>
+<script src="js/signature.js"></script>
+<script src="js/compare.js"></script>
 <script src="js/exporter.js"></script>
 <script src="js/app.js"></script>
 </body>

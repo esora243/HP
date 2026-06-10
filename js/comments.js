@@ -3,15 +3,9 @@
    ============================================ */
 
 const Comments = {
-  // {id: {id, pageIndex, x, y, author, content, createdAt}}
-  // x,y は注釈キャンバスの正規化座標 (0-1)
   items: {},
   editingId: null,
-  pendingPos: null,
 
-  /**
-   * ポインタ位置にコメントを追加
-   */
   addCommentAt(x, y) {
     const realIdx = PdfRenderer.getCurrentRealPageIndex();
     if (!realIdx) return;
@@ -48,7 +42,6 @@ const Comments = {
     item.author = document.getElementById('note-author').value.trim();
     item.content = document.getElementById('note-content').value.trim();
     if (!item.content) {
-      // 空ならキャンセル扱いで削除
       this.deleteCurrent();
       return;
     }
@@ -56,7 +49,9 @@ const Comments = {
     this.renderMarkersForPage(PdfRenderer.getCurrentRealPageIndex());
     this.renderList();
     PageManager.refreshAllThumbnails();
-    Utils.toast('コメントを保存しました', 'success');
+    Utils.toast('コメントを保存しました', 'success', 1500);
+    History.record();
+    Storage.scheduleSave();
   },
 
   deleteCurrent() {
@@ -66,6 +61,8 @@ const Comments = {
     this.renderMarkersForPage(PdfRenderer.getCurrentRealPageIndex());
     this.renderList();
     PageManager.refreshAllThumbnails();
+    History.record();
+    Storage.scheduleSave();
   },
 
   closeModal() {
@@ -73,13 +70,8 @@ const Comments = {
     this.editingId = null;
   },
 
-  /**
-   * 指定ページの付箋マーカーを再描画
-   */
   renderMarkersForPage(realPageIndex) {
-    // 既存マーカー削除
     document.querySelectorAll('.note-marker').forEach(el => el.remove());
-
     const wrapper = document.getElementById('viewer-canvas-wrapper');
     if (!wrapper) return;
     const canvasW = Annotations.fabricCanvas?.getWidth() || 0;
@@ -103,23 +95,20 @@ const Comments = {
       });
   },
 
-  /**
-   * 右パネルのコメント一覧描画
-   */
   renderList() {
     const listEl = document.getElementById('comment-list');
+    if (!listEl) return;
     const all = Object.values(this.items);
     if (all.length === 0) {
       listEl.innerHTML = `
         <div class="empty-state">
           <p>💬</p>
           <p>コメントはまだありません</p>
-          <small>付箋ツール（📌）でページにコメントを追加できます</small>
+          <small>📌ツールで付箋を追加</small>
         </div>`;
       return;
     }
 
-    // ページ番号(表示順)を取得
     const realToDisplay = {};
     PageManager.pageOrder.forEach((realIdx, i) => {
       realToDisplay[realIdx] = i + 1;
@@ -145,7 +134,6 @@ const Comments = {
         const id = el.dataset.id;
         const c = this.items[id];
         if (!c) return;
-        // 対応ページへ移動
         const dispPage = realToDisplay[c.pageIndex];
         if (dispPage) PdfRenderer.renderPage(dispPage);
         setTimeout(() => this.openModal(id), 400);
@@ -153,16 +141,9 @@ const Comments = {
     });
   },
 
-  /**
-   * 指定ページのコメント数を取得 (サムネ表示用)
-   */
   countForPage(realPageIndex) {
     return Object.values(this.items).filter(c => c.pageIndex === realPageIndex).length;
   },
-
-  getAll() {
-    return this.items;
-  }
 };
 
 function escapeHtml(s) {
@@ -171,7 +152,6 @@ function escapeHtml(s) {
   }[ch]));
 }
 
-// グローバル呼び出し用（モーダルから）
 function saveCurrentNote() { Comments.saveCurrent(); }
 function deleteCurrentNote() { Comments.deleteCurrent(); }
 function closeNoteModal() { Comments.closeModal(); }
